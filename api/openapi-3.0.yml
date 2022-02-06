@@ -1,0 +1,117 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: TLE provider API
+  description: API for the TLE provider server
+  termsOfService: http://swagger.io/terms/
+  contact:
+    name: Camille Chomel
+    email: camille.chomel@gmail.com
+    url: https://github.com/Funkit
+  license:
+    name: MIT
+    url: https://choosealicense.com/licenses/mit/
+servers:
+  - url: http://localhost
+paths:
+  /tle:
+    get:
+      description: |
+        Returns the latest TLE entries for all the satellites.
+      operationId: getTLEList
+      parameters:
+        - name: group
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [geo, oneweb, starlink]
+        - name: limit
+          in: query
+          description: maximum number of results to return
+          required: false
+          schema:
+            type: integer
+            format: int32
+      responses:
+        200:
+          description: get TLE list response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Satellite'
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /tle/{satellite}:
+    get:
+      description: Returns TLE for the specified satellite
+      operationId: find a satellite by name
+      parameters:
+        - name: satellite
+          in: path
+          description: name of satellite to fetch
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: TLE response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Satellite'
+        404:
+          description: Satellite not found
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    Satellite:
+      allOf:
+        - type: object
+          required:
+          - name
+          - norad_id
+          - tle_line_1
+          - tle_line_2
+          properties:
+            name:
+              type: string
+              description: Satellite name.
+            norad_id:
+              type: integer
+              format: int32
+              description: NORAD catalog ID.
+            tle_line_1:
+              type: string
+              description: TLE line 1.
+            tle_line_2:
+              type: string
+              description: TLE line 2.
+      example: {
+          "name": "EUTELSAT 7A",
+          "norad_id":  28946,
+          "tle_line_1": "1 28187U 04008A   21349.66107469  .00000121  00000+0  00000+0 0  9998",
+          "tle_line_2": "2 28187   1.6517  89.7677 0004668 169.2304 284.3274  1.00269029 64864",
+      }
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
