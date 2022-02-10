@@ -36,7 +36,7 @@ func formatWithoutDecimalPoint(value float64) string {
 	var2string := fmt.Sprintf("%5d", int(varwithoutexp))
 
 	// Substract 1 as it is not proper scientific notion like 1.2e-4 but 0.12e-3
-	output := " " + var2string + fmt.Sprintf("%d", exponent+1)
+	output := " " + var2string + fmt.Sprintf("%+d", exponent+1)
 
 	return output
 }

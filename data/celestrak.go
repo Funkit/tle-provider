@@ -78,7 +78,7 @@ func (cc *CelestrakClient) GetData() ([]Satellite, error) {
 
 	for _, element := range cc.OrbitalData {
 
-		fmt.Printf("DEBUG: %v\n", element)
+		fmt.Printf("Satellite: %v\n", element.ObjectName)
 
 		sat, err := convertToTLE(element)
 		if err != nil {
@@ -155,7 +155,11 @@ func convertToTLE(data CelestrakData) (Satellite, error) {
 
 	tleLine1WithoutChecksum := strings.Join(line1Items, "")
 
-	tleLine1 := tleLine1WithoutChecksum + checksumAsString(tleLine1WithoutChecksum)
+	checksum1, err := checksumAsString(tleLine1WithoutChecksum)
+	if err != nil {
+		return Satellite{}, err
+	}
+	tleLine1 := tleLine1WithoutChecksum + checksum1
 
 	// Line 2 formatting
 
@@ -179,7 +183,11 @@ func convertToTLE(data CelestrakData) (Satellite, error) {
 
 	tleLine2WithoutChecksum := strings.Join(line2Items, "")
 
-	tleLine2 := tleLine2WithoutChecksum + checksumAsString(tleLine2WithoutChecksum)
+	checksum2, err := checksumAsString(tleLine2WithoutChecksum)
+	if err != nil {
+		return Satellite{}, err
+	}
+	tleLine2 := tleLine2WithoutChecksum + checksum2
 
 	return Satellite{
 		SatelliteName: data.ObjectName,
@@ -235,9 +243,12 @@ func getDayOfYear(epoch string) (string, error) {
 	return dayString, nil
 }
 
-func checksumAsString(line string) string {
-	fmt.Printf("DEBUG: line = %s\n", line)
+func checksumAsString(line string) (string, error) {
 	var checksum int
+	if len(line) != 68 {
+		errorText := fmt.Sprintf("Generated line is not 68 characters long. Line: %s", line)
+		return "", errors.New(errorText)
+	}
 	for i := 0; i < 68; i++ {
 		if line[i] == '-' {
 			checksum++
@@ -245,5 +256,5 @@ func checksumAsString(line string) string {
 			checksum = checksum + int(line[i]) - 48
 		}
 	}
-	return fmt.Sprintf("%d", checksum%10)
+	return fmt.Sprintf("%d", checksum%10), nil
 }
