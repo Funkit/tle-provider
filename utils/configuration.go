@@ -12,7 +12,7 @@ var args struct {
 	ConfigFilePath string `arg:"required,-c" help:"path to the configuration file"`
 }
 
-//Info server configuration
+// Info server configuration
 type Info struct {
 	CelestrakURLs             CelestrakURLs `yaml:"celestrak_urls"`
 	CelestrakRefreshRateHours string        `yaml:"celestrak_refresh_rate_hours"`
@@ -20,13 +20,13 @@ type Info struct {
 	DataSource                string        `yaml:"data_source"`
 }
 
-//CelestrakURLs Celestrak addresses
+// CelestrakURLs Celestrak addresses
 type CelestrakURLs struct {
 	AllSatellites string `yaml:"all_satellites"`
 	GeoSatellites string `yaml:"geo_satellites"`
 }
 
-//GetConfiguration From the command line arguments, get the configuration file location and parse it
+// GetConfiguration From the command line arguments, get the configuration file location and parse it
 func GetConfiguration() (*Info, error) {
 	arg.MustParse(&args)
 	fmt.Printf("Configuration file path=%s\n", args.ConfigFilePath)

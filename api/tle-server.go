@@ -8,15 +8,15 @@ import (
 	"github.com/labstack/echo/v4"
 )
 
-//TLEServer The TLE server object
+// TLEServer The TLE server object
 type TLEServer struct {
 	Source data.Source
 }
 
-//NewTLEServer Generates a new server
+// NewTLEServer Generates a new server
 func NewTLEServer(config *utils.Info, dsBuilder data.SourceBuilder) (*TLEServer, error) {
 
-	s, err := dsBuilder.NewDataSource(config.DataSource)
+	s, err := dsBuilder.NewDataSource(config)
 	if err != nil {
 		return nil, err
 	}
@@ -35,7 +35,7 @@ func sendServerError(ctx echo.Context, code int, message string) error {
 	return err
 }
 
-//GetTLEList returns all the latest available TLEs
+// GetTLEList returns all the latest available TLEs
 func (ts *TLEServer) GetTLEList(ctx echo.Context, params GetTLEListParams) error {
 
 	satelliteList, err := ts.Source.GetData()
@@ -46,7 +46,7 @@ func (ts *TLEServer) GetTLEList(ctx echo.Context, params GetTLEListParams) error
 	return ctx.JSON(http.StatusOK, satelliteList)
 }
 
-//FindASatelliteByName Return TLE for a given satellite
+// FindASatelliteByName Return TLE for a given satellite
 func (ts *TLEServer) FindASatelliteByName(ctx echo.Context, satellite string) error {
 
 	satelliteList, err := ts.Source.GetData()
