@@ -1,7 +1,16 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/Funkit/tle-provider/utils"
+)
 
 func main() {
-	fmt.Println("Hello World !")
+	config, err := utils.GetConfiguration()
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(config)
 }

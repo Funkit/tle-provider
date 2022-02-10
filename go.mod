@@ -3,6 +3,8 @@ module github.com/Funkit/tle-provider
 go 1.17
 
 require (
+	github.com/alexflint/go-arg v1.4.2 // indirect
+	github.com/alexflint/go-scalar v1.0.0 // indirect
 	github.com/deepmap/oapi-codegen v1.9.1 // indirect
 	github.com/getkin/kin-openapi v0.87.0 // indirect
 	github.com/ghodss/yaml v1.0.0 // indirect
