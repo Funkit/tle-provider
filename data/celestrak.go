@@ -77,6 +77,9 @@ func (cc *CelestrakClient) GetData() ([]Satellite, error) {
 	var tleList []Satellite
 
 	for _, element := range cc.OrbitalData {
+
+		fmt.Printf("DEBUG: %v\n", element)
+
 		sat, err := convertToTLE(element)
 		if err != nil {
 			return []Satellite{}, err
@@ -221,10 +224,19 @@ func getDayOfYear(epoch string) (string, error) {
 
 	dayOfYearFloat := float64(t.YearDay()) + float64(t.Hour())/24 + float64(t.Minute())/(60*24) + float64(t.Second())/(3600*24) + float64(t.Nanosecond())/(1000000000*3600*24)
 
-	return fmt.Sprintf("%3.8f", dayOfYearFloat), nil
+	// For some reason the fmt formatting %03.8f does not add leading zeroes, so manual padding for single and double digits added manually
+	dayString := fmt.Sprintf("%.8f", dayOfYearFloat)
+	if dayOfYearFloat < 100 {
+		dayString = "0" + dayString
+	}
+	if dayOfYearFloat < 10 {
+		dayString = "0" + dayString
+	}
+	return dayString, nil
 }
 
 func checksumAsString(line string) string {
+	fmt.Printf("DEBUG: line = %s\n", line)
 	var checksum int
 	for i := 0; i < 68; i++ {
 		if line[i] == '-' {

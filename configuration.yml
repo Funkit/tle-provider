@@ -1,0 +1,6 @@
+celestrak_urls:
+  all_satellites: "https://celestrak.com/NORAD/elements/gp.php?GROUP=active&FORMAT=json"
+  geo_satellites: "https://celestrak.com/NORAD/elements/gp.php?GROUP=geo&FORMAT=json"
+celestrak_refresh_rate_hours: 12
+server_port: 8080
+data_source: "celestrak"
