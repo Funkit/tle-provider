@@ -191,6 +191,7 @@ func convertToTLE(data CelestrakData) (Satellite, error) {
 
 	return Satellite{
 		SatelliteName: data.ObjectName,
+		NORADID:       fmt.Sprintf("%d", data.NORADCatID),
 		TLELine1:      tleLine1,
 		TLELine2:      tleLine2,
 	}, nil
