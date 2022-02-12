@@ -20,25 +20,22 @@ func formatWithoutDecimalPoint(value float64) string {
 	exponent := int(math.Floor(math.Log10(math.Abs(value))))
 
 	// If |exponent| is > 9, it is negligible so it should return 00000-0
-	if exponent > 9 || exponent < -9 {
+	if exponent < -9 {
 		return " 00000-0"
 	}
 
-	exponentAbs := int(math.Abs(float64(exponent)))
-	// Remove exponent (transform 1.2e-5 into 1.2) then multiply by 10000 to have 5 figures to display (transform 1.2 into 12000)
-	varwithoutexp := value * math.Pow10(exponentAbs) * math.Pow10(4)
+	// Get exponent as string
+	expString := fmt.Sprintf("%+d", exponent+1)
 
-	// If varwithoutexp < 1, it means the result is negligible hence the 0 output
-	if varwithoutexp < 1 {
-		return " 00000-0"
+	// Get 5 significant figures as "XXXXX"
+	sciNotationString := fmt.Sprintf("%5d", int(value*math.Pow10(-exponent)*math.Pow10(4)))
+
+	// Add sign if needed
+	if value < 0 {
+		return sciNotationString + expString
 	}
 
-	var2string := fmt.Sprintf("%5d", int(varwithoutexp))
-
-	// Substract 1 as it is not proper scientific notion like 1.2e-4 but 0.12e-3
-	output := " " + var2string + fmt.Sprintf("%+d", exponent+1)
-
-	return output
+	return " " + sciNotationString + expString
 }
 
 func formatAngles(val float64) string {
