@@ -54,6 +54,7 @@ func TestObjectIDToCOSPARID(t *testing.T) {
 }
 
 func TestFormatWithoutDecimalPoint(t *testing.T) {
+	// Typical value
 	bStar1 := 0.11693
 	expectedOutput := " 11693+0" //value with leading spaces
 
@@ -65,6 +66,7 @@ func TestFormatWithoutDecimalPoint(t *testing.T) {
 		t.Errorf("FAIL: formatting does not match expected output")
 	}
 
+	// bStar >= 10
 	bStar2 := 19.352
 	expectedOutput = " 19352+2" //value with leading spaces
 
@@ -73,6 +75,18 @@ func TestFormatWithoutDecimalPoint(t *testing.T) {
 	t.Log(bStar2Formatted)
 
 	if bStar2Formatted != expectedOutput {
+		t.Errorf("FAIL: formatting does not match expected output")
+	}
+
+	// bStar < 0
+	bStar3 := -1.352
+	expectedOutput = "-13520+1" //value with leading spaces
+
+	bStar3Formatted := formatWithoutDecimalPoint(bStar3)
+
+	t.Log(bStar3Formatted)
+
+	if bStar3Formatted != expectedOutput {
 		t.Errorf("FAIL: formatting does not match expected output")
 	}
 
