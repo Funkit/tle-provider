@@ -1,16 +1,5 @@
 package data
 
-type data struct {
-	Results []SatelliteData `json:"results"`
-}
-
-// SatelliteData data stored in SkyminerDocument
-type SatelliteData struct {
-	ID         string      `json:"_id"`
-	Date       string      `json:"date"`
-	Satellites []Satellite `json:"satellite_data"`
-}
-
 // Satellite data structure for each satellite
 type Satellite struct {
 	SatelliteName string `json:"satellite_name"`
