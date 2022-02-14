@@ -14,16 +14,10 @@ type TLEServer struct {
 }
 
 // NewTLEServer Generates a new server
-func NewTLEServer(config *utils.Info, dsBuilder data.SourceBuilder) (*TLEServer, error) {
-
-	s, err := dsBuilder.NewDataSource(config)
-	if err != nil {
-		return nil, err
-	}
-
+func NewTLEServer(config *utils.Info, s data.Source) *TLEServer {
 	return &TLEServer{
 		Source: s,
-	}, nil
+	}
 }
 
 func sendServerError(ctx echo.Context, code int, message string) error {

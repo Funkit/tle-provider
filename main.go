@@ -12,10 +12,8 @@ import (
 	echomiddleware "github.com/labstack/echo/v4/middleware"
 )
 
-// Implementation of the source builder interface
-type publicBuilder struct{}
-
-func (publicBuilder) NewDataSource(info *utils.Info) (data.Source, error) {
+// NewDataSource Create data source
+func NewDataSource(info *utils.Info) (data.Source, error) {
 
 	if info.DataSource == "celestrak" {
 		s := data.NewCelestrakClient(info)
@@ -30,8 +28,6 @@ func main() {
 		panic(err)
 	}
 
-	var builder publicBuilder
-
 	// TLE server setup
 	swagger, err := api.GetSwagger()
 	if err != nil {
@@ -39,10 +35,12 @@ func main() {
 	}
 	swagger.Servers = nil
 
-	tleServer, err := api.NewTLEServer(config, builder)
+	dataSource, err := NewDataSource(config)
 	if err != nil {
 		panic(err)
 	}
+
+	tleServer := api.NewTLEServer(config, dataSource)
 
 	// Echo router setup
 	e := echo.New()

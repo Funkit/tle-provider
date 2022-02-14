@@ -1,7 +1,5 @@
 package data
 
-import "github.com/Funkit/tle-provider/utils"
-
 type data struct {
 	Results []SatelliteData `json:"results"`
 }
@@ -24,9 +22,4 @@ type Satellite struct {
 // Source interface for either Celestrak or Skyminer data
 type Source interface {
 	GetData() ([]Satellite, error)
-}
-
-// SourceBuilder Interface to generate new datasource (can be Celestrak, PostgreSQL...)
-type SourceBuilder interface {
-	NewDataSource(info *utils.Info) (Source, error)
 }
