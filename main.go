@@ -13,11 +13,10 @@ import (
 )
 
 // NewDataSource Create data source
-func NewDataSource(info *utils.Info) (data.Source, error) {
+func NewDataSource(info map[string]interface{}) (data.Source, error) {
 
-	if info.DataSource == "celestrak" {
-		s := data.NewCelestrakClient(info)
-		return s, nil
+	if info["data_source"] == "celestrak" {
+		return data.NewCelestrakClient(info)
 	}
 	return nil, errors.New("data source not supported")
 }
@@ -40,7 +39,7 @@ func main() {
 		panic(err)
 	}
 
-	tleServer := api.NewTLEServer(config, dataSource)
+	tleServer := api.NewTLEServer(dataSource)
 
 	// Echo router setup
 	e := echo.New()
@@ -49,5 +48,5 @@ func main() {
 	api.RegisterHandlers(e, tleServer)
 
 	// Start server
-	e.Logger.Fatal(e.Start(fmt.Sprintf("0.0.0.0:%d", config.ServerPort)))
+	e.Logger.Fatal(e.Start(fmt.Sprintf("0.0.0.0:%d", config["server_port"])))
 }

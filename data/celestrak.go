@@ -47,15 +47,29 @@ type CelestrakClient struct {
 }
 
 // NewCelestrakClient Generates a new CelestrakClient from the information in the configuration file
-func NewCelestrakClient(config *utils.Info) *CelestrakClient {
+func NewCelestrakClient(config map[string]interface{}) (*CelestrakClient, error) {
+
+	if config["celestrak_urls"] == nil {
+		return nil, errors.New("Missing celestrak URLs, see README")
+	}
+
+	celestrakURLs, isOfCorrectType := config["celestrak_urls"].(map[interface{}]interface{})
+	if !isOfCorrectType {
+		return nil, errors.New("`celestrak_urls` item in config file of the wrong type, see README")
+	}
+
+	if celestrakURLs["all_satellites"] == "" || celestrakURLs["geo_satellites"] == "" {
+		return nil, errors.New("Missing either `all_satellites` or `geo_satellites` celestrak URLs, see README")
+	}
+
 	return &CelestrakClient{
 		httpClient:        &http.Client{},
-		AllSatellitesURL:  config.CelestrakURLs.AllSatellites,
-		GeoSatellitesURL:  config.CelestrakURLs.GeoSatellites,
+		AllSatellitesURL:  fmt.Sprintf("%v", celestrakURLs["all_satellites"]),
+		GeoSatellitesURL:  fmt.Sprintf("%v", celestrakURLs["geo_satellites"]),
 		OrbitalData:       []CelestrakData{},
 		LastCelestrakPull: time.Date(1970, 01, 01, 0, 0, 0, 1, time.UTC),
 		UpdatePeriod:      1,
-	}
+	}, nil
 }
 
 // GetData Implementation of the Source interface for Celestrak

@@ -4,7 +4,6 @@ import (
 	"net/http"
 
 	"github.com/Funkit/tle-provider/data"
-	"github.com/Funkit/tle-provider/utils"
 	"github.com/labstack/echo/v4"
 )
 
@@ -14,7 +13,7 @@ type TLEServer struct {
 }
 
 // NewTLEServer Generates a new server
-func NewTLEServer(config *utils.Info, s data.Source) *TLEServer {
+func NewTLEServer(s data.Source) *TLEServer {
 	return &TLEServer{
 		Source: s,
 	}
