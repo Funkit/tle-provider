@@ -3,7 +3,7 @@ package data
 // Satellite data structure for each satellite
 type Satellite struct {
 	SatelliteName string `json:"satellite_name"`
-	NORADID       string `json:"norad_id"`
+	NORADID       int    `json:"norad_id"`
 	TLELine1      string `json:"tle_line_1"`
 	TLELine2      string `json:"tle_line_2"`
 }
