@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"net/http"
 
 	"github.com/Funkit/tle-provider/data"
@@ -54,4 +55,23 @@ func (ts *TLEServer) FindASatelliteByName(ctx echo.Context, satellite string) er
 	}
 
 	return sendServerError(ctx, http.StatusBadRequest, "Satellite not found")
+}
+
+// GetConfig Return TLE for a given satellite
+func (ts *TLEServer) GetConfig(ctx echo.Context) error {
+
+	conf, err := ts.Source.GetConfig()
+	if err != nil {
+		return err
+	}
+	confJSON, err := json.Marshal(conf)
+	if err != nil {
+		return err
+	}
+	confJSONString := string(confJSON)
+
+	return ctx.JSON(http.StatusOK, ServerConfig{
+		DataSource:           ts.Source.GetDataSource(),
+		AdditionalProperties: &confJSONString,
+	})
 }

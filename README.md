@@ -1,5 +1,7 @@
 # tle-provider
-Pulls TLE data from multiple sources and exposes the result through a REST API
+Pulls TLE data from multiple sources and exposes the result through a REST API.
+
+The OpenAPI specification is available [here.](./api/openapi-3.0.yml)
 
 ## How to generate OpenAPI 3.0 code from spec
 

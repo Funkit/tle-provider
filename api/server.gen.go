@@ -21,6 +21,9 @@ import (
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
 
+	// (GET /config)
+	GetConfig(ctx echo.Context) error
+
 	// (GET /tle)
 	GetTLEList(ctx echo.Context, params GetTLEListParams) error
 
@@ -31,6 +34,15 @@ type ServerInterface interface {
 // ServerInterfaceWrapper converts echo contexts to parameters.
 type ServerInterfaceWrapper struct {
 	Handler ServerInterface
+}
+
+// GetConfig converts echo context to params.
+func (w *ServerInterfaceWrapper) GetConfig(ctx echo.Context) error {
+	var err error
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GetConfig(ctx)
+	return err
 }
 
 // GetTLEList converts echo context to params.
@@ -102,6 +114,7 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
+	router.GET(baseURL+"/config", wrapper.GetConfig)
 	router.GET(baseURL+"/tle", wrapper.GetTLEList)
 	router.GET(baseURL+"/tle/:satellite", wrapper.FindASatelliteByName)
 
@@ -110,22 +123,24 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 // Base64 encoded, gzipped, json marshaled Swagger object
 var swaggerSpec = []string{
 
-	"H4sIAAAAAAAC/8xVS2/bRhD+K4tpbyX4MkNJPFVNnEKAmwSxc0oDY00NqU32wewOnRgG/3uxS0nUw3BS",
-	"9FJfvOLO45tvvpl9hNqozmjU5KB6BFdvUPFwvLTWWH/orOnQksDwuTZr9P8bYxUnqEBousghAnrocPyJ",
-	"LVoYIlDoHG+D9fbSkRW6hWGIwOLXXlhcQ/VxjDnZf9oHM3efsSYf65oTSikoRONSvm2g+niKTXMV7tfo",
-	"ais6EkZDNbkyfx9PUHdoItDG8vWtWJ87v3n7fvmK1Zy4NC1bvfLuP1E6SbyVQuNtdh7y5uqS+TuWPYll",
-	"75o/45o/4XpCaiDjoLQjUEdpzvn+FAF+56qTONEKlx9uLq+ulzdstjyMW+XzRVEelwwZy+fZfPaBpUWa",
-	"zpeMsTy7KBZxWWbprCgXjMWp/8vyjLFw+i2dDilji8VifoyygnwMyhjL4vJFNmNsvohn5WzmHYuynLOs",
-	"XMT5RVqwfF7EF/ms8KZpmpeLNF+wspiXBQyDZ0roxoxy1sRr8kdUXEiooOZKSIlxvTEK5e+t/xzXRvmi",
-	"RyZejhbsZbCACHrrHTdEnauSpBW06e+8S/K6119EEPBxI5fvVqwxltEGmW9qZ829WKNlDu09WohAihq1",
-	"O+T/r9XNWap6Y4xDvjUOKbdnlyhBSRAUWuXeNtdo70WNW+cqSdw33rZoY2GSYJJ4vgX5nsMRpuW7FURw",
-	"j9aN4LM4jVMf2XSoeSeggovwKYKO0yaMYkKjdlqkcxm/R+qtdqF6yQkdBRJQkxXoAjFcynDtdsPr4r81",
-	"hJSW+zCrNVTwJ9LN1eWVcBRyW66Q0LqwGoTP9LVH+zA1rrWm7yDarrnQdN0rPy0tGh9d4ze88wbErRT6",
-	"y8FsTGN2Wo7i34XqFdO9ukPLTMMsul6SY2SYDbVC9CQeKZSgIzw/3C1+Ni26zvgee488TXdCRh3I5l0n",
-	"RR1YSj47D/HxIIMgVMHxV4sNVPBLMj0ByXb/J9O6HfYQuLX8AcL0HNff4tg/KRyxHTbv+OJfQnsO0fgc",
-	"PZF9pQmt5pJdh9Fhe8MhCipMHvcaGn6oSF/Gbi5dh7VoBK4nEZ4J8LXQ6+WerD8e3oxL90SKx7l8771I",
-	"9lG9TBqkerNTiZ+iSSSH2acFT7bHQ+GcqvS/yuQn1XHeD0/hoQiKtHj2TTbEGtPr9f9AMEME4/4d2zat",
-	"2ipJpKm53BjnX8fhnwAAAP//voyWxTcJAAA=",
+	"H4sIAAAAAAAC/9SWX2/bNhDAvwrB7W2C/kWVbT3NS9PBQNYGTfrUBQEjnWS2FKmSp7RB4O8+HGVbVmw0",
+	"BbYBW17CUPf/frzLEy9N2xkNGh0vnrgr19AKf7yw1lg6dNZ0YFGCvy5NBfS7NrYVyAsuNZ6lPOD42MHw",
+	"JzRg+SbgLTgnGi+9/ejQSt3wzSbgFr700kLFi4+DzVH+dm/M3H+CEsnWtUBQSqK3JpR6V/Pi4/PYtGj9",
+	"9wpcaWWH0mhejKqMvodjqLtoAq6NFdWdrI6V3757v3zNSoFCmYatXpP6D6SOCu6U1HCXHJu8ubxg9I0l",
+	"J2PZq6bfUU1PqD4rqi/GQWqToCZujut9G3D4JtpOwVhWfvHh5uLyennDZstDu0U6X2T5NGWesHSezGcf",
+	"WJzF8XzJGEuTs2wR5nkSz7J8wVgY00+SJoz50y/xeIgZWywW82mUBU8Ho4yxJMxfJTPG5otwls9mpJjl",
+	"+Zwl+SJMz+KMpfMsPEtnGYnGcZov4nTB8myeZ75O12AfwJ4bXcvmGHFRVZIKLtTV5P6oVZVAcedMb8sf",
+	"gPxQ+LjiJC11bYYnplGUSEdohVS84KVopVIQlmvTgvq1oeuwNC01YujO+SDBzr0ED3hvSXGN2LkiihqJ",
+	"6/6eVKI3vf4s/aOawrW8WrHaWIZrYARaZ82DrMAy56vFA65kCdodMvHH6ubIVbk2xoHYCnuX27OLWomR",
+	"hxxs697V1AdJxfPKRRS5r6JpwIbSRF4kIgYkEod8EtPyasUD/gDWDcEnYRzGZNl0oEUnecHP/FXAO4Fr",
+	"37+o3De8ATx+Xe8Be6udL4B7dAgtGzR6K7yItz6cVxUv+O+AW4ao1a4zlCPZTeN410jQ3pPoOiVLrxp9",
+	"cuRuN2zp9LOFmhf8p2icxtF2FEcTVj0n06jPD0NkuzCoFFmcfXcaGmS16XVFsq/+wYiHzXEi1JVGsFoo",
+	"NuTEdoIBR9E4eiTbNG/pLsJh/LzYKyUQHHpmQaOV4DzHQqmhlbuMXfjnyR7eXF5cSoceFStaQLDObxdJ",
+	"nr70YB/Hd9ZY03c8OCgF6L6l2BswZF3DV7gnARRWSf354LGPk+F5Oq34Jtu+Zbpv78EyU1Mje4WOoWHW",
+	"58qDk/Eo2UqcxPPieqLx/rdwlQite5Hb/cbe7EMQ1orHU2Q0MPRPSYcThv8jXL4WKEYqo6c9U5sXCaW0",
+	"dmPVdVDKWkI1QnkE5Bupq+W+eL89vh32+DM0p76IBYJmb5WwqQHL9Y4aGoIjNIfexx2FtodDkJ5Te/tv",
+	"TrmRluP+UAn/54NtB9Am4MM6Hdo4bs4iipQphVobN/wDttXcr9rdBgj2N97m5nbzVwAAAP//xfK4kMUL",
+	"AAA=",
 }
 
 // GetSwagger returns the content of the embedded swagger specification file

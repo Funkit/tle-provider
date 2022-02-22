@@ -44,6 +44,7 @@ type CelestrakClient struct {
 	LastCelestrakPull time.Time
 	UpdatePeriod      float64
 	Lock              sync.Mutex
+	ServerConfig      map[string]string
 }
 
 // NewCelestrakClient Generates a new CelestrakClient from the information in the configuration file
@@ -53,23 +54,48 @@ func NewCelestrakClient(config map[string]interface{}) (*CelestrakClient, error)
 		return nil, errors.New("Missing celestrak URLs, see README")
 	}
 
+	celestrakRefreshRate, isOfCorrectType := config["celestrak_refresh_rate_hours"].(int)
+	if !isOfCorrectType {
+		return nil, errors.New("`celestrak_refresh_rate_hours` item in config file of the wrong type, see README")
+	}
+
 	celestrakURLs, isOfCorrectType := config["celestrak_urls"].(map[interface{}]interface{})
 	if !isOfCorrectType {
 		return nil, errors.New("`celestrak_urls` item in config file of the wrong type, see README")
 	}
 
-	if celestrakURLs["all_satellites"] == "" || celestrakURLs["geo_satellites"] == "" {
+	urlAllSatellites := fmt.Sprintf("%v", celestrakURLs["all_satellites"])
+	urlGeoSatellites := fmt.Sprintf("%v", celestrakURLs["geo_satellites"])
+
+	if urlAllSatellites == "" || urlGeoSatellites == "" {
 		return nil, errors.New("Missing either `all_satellites` or `geo_satellites` celestrak URLs, see README")
+	}
+
+	srvConfig := map[string]string{
+		"celestrak_refresh_rate_hours": fmt.Sprintf("%v", celestrakRefreshRate),
+		"celestrak_url_all_satellites": urlAllSatellites,
+		"celestrak_url_geo_satellites": urlGeoSatellites,
 	}
 
 	return &CelestrakClient{
 		httpClient:        &http.Client{},
-		AllSatellitesURL:  fmt.Sprintf("%v", celestrakURLs["all_satellites"]),
-		GeoSatellitesURL:  fmt.Sprintf("%v", celestrakURLs["geo_satellites"]),
+		AllSatellitesURL:  urlAllSatellites,
+		GeoSatellitesURL:  urlGeoSatellites,
 		OrbitalData:       []CelestrakData{},
 		LastCelestrakPull: time.Date(1970, 01, 01, 0, 0, 0, 1, time.UTC),
 		UpdatePeriod:      1,
+		ServerConfig:      srvConfig,
 	}, nil
+}
+
+//GetDataSource return server data source
+func (cc *CelestrakClient) GetDataSource() string {
+	return "Celestrak"
+}
+
+//GetConfig return server configuration
+func (cc *CelestrakClient) GetConfig() (map[string]string, error) {
+	return cc.ServerConfig, nil
 }
 
 // GetData Implementation of the Source interface for Celestrak

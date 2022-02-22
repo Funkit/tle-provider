@@ -11,4 +11,6 @@ type Satellite struct {
 // Source interface for either Celestrak or Skyminer data
 type Source interface {
 	GetData() ([]Satellite, error)
+	GetDataSource() string
+	GetConfig() (map[string]string, error)
 }

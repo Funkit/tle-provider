@@ -13,9 +13,15 @@ info:
     url: https://choosealicense.com/licenses/mit/
 servers:
   - url: http://localhost
+tags:
+  - name: "Config"
+  - name: "Data"
 paths:
+  # Data
   /tle:
     get:
+      tags:
+        - "Data"
       description: |
         Returns the latest TLE entries for all the satellites.
       operationId: getTLEList
@@ -50,6 +56,8 @@ paths:
                 $ref: '#/components/schemas/Error'
   /tle/{satellite}:
     get:
+      tags:
+        - "Data"
       description: Returns TLE for the specified satellite
       operationId: find a satellite by name
       parameters:
@@ -66,6 +74,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Satellite'
+        404:
+          description: Satellite not found
+        500:
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  # Config
+  /config:
+    get:
+      tags:
+        - "Config"
+      description: Returns the system configuration
+      responses:
+        '200':
+          description: Configuration response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServerConfig'
         404:
           description: Satellite not found
         500:
@@ -104,6 +133,15 @@ components:
           "tle_line_1": "1 28187U 04008A   21349.66107469  .00000121  00000+0  00000+0 0  9998",
           "tle_line_2": "2 28187   1.6517  89.7677 0004668 169.2304 284.3274  1.00269029 64864",
       }
+    ServerConfig:
+      type: object
+      required:
+        - data_source
+      properties:
+        data_source:
+          type: string
+        additionalProperties:
+          type: string
     Error:
       type: object
       required:

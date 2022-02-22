@@ -25,6 +25,12 @@ type Satellite struct {
 	TleLine2 string `json:"tle_line_2"`
 }
 
+// ServerConfig defines model for ServerConfig.
+type ServerConfig struct {
+	AdditionalProperties *string `json:"additionalProperties,omitempty"`
+	DataSource           string  `json:"data_source"`
+}
+
 // GetTLEListParams defines parameters for GetTLEList.
 type GetTLEListParams struct {
 	Group *GetTLEListParamsGroup `json:"group,omitempty"`
