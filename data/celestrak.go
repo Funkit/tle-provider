@@ -50,25 +50,9 @@ type CelestrakClient struct {
 // NewCelestrakClient Generates a new CelestrakClient from the information in the configuration file
 func NewCelestrakClient(config map[string]interface{}) (*CelestrakClient, error) {
 
-	if config["celestrak_urls"] == nil {
-		return nil, errors.New("Missing celestrak URLs, see README")
-	}
-
-	celestrakRefreshRate, isOfCorrectType := config["celestrak_refresh_rate_hours"].(int)
-	if !isOfCorrectType {
-		return nil, errors.New("`celestrak_refresh_rate_hours` item in config file of the wrong type, see README")
-	}
-
-	celestrakURLs, isOfCorrectType := config["celestrak_urls"].(map[interface{}]interface{})
-	if !isOfCorrectType {
-		return nil, errors.New("`celestrak_urls` item in config file of the wrong type, see README")
-	}
-
-	urlAllSatellites := fmt.Sprintf("%v", celestrakURLs["all_satellites"])
-	urlGeoSatellites := fmt.Sprintf("%v", celestrakURLs["geo_satellites"])
-
-	if urlAllSatellites == "" || urlGeoSatellites == "" {
-		return nil, errors.New("Missing either `all_satellites` or `geo_satellites` celestrak URLs, see README")
+	celestrakRefreshRate, urlAllSatellites, urlGeoSatellites, err := extractConfiguration(config)
+	if err != nil {
+		return nil, err
 	}
 
 	srvConfig := map[string]string{
@@ -83,9 +67,34 @@ func NewCelestrakClient(config map[string]interface{}) (*CelestrakClient, error)
 		GeoSatellitesURL:  urlGeoSatellites,
 		OrbitalData:       []CelestrakData{},
 		LastCelestrakPull: time.Date(1970, 01, 01, 0, 0, 0, 1, time.UTC),
-		UpdatePeriod:      1,
+		UpdatePeriod:      float64(celestrakRefreshRate),
 		ServerConfig:      srvConfig,
 	}, nil
+}
+
+func extractConfiguration(config map[string]interface{}) (refreshRate int, urlAll string, urlGeo string, err error) {
+	if config["celestrak_urls"] == nil {
+		return 0, "", "", errors.New("Missing celestrak URLs, see README")
+	}
+
+	celestrakRefreshRate, isOfCorrectType := config["celestrak_refresh_rate_hours"].(int)
+	if !isOfCorrectType {
+		return 0, "", "", errors.New("`celestrak_refresh_rate_hours` item in config file of the wrong type, see README")
+	}
+
+	celestrakURLs, isOfCorrectType := config["celestrak_urls"].(map[interface{}]interface{})
+	if !isOfCorrectType {
+		return 0, "", "", errors.New("`celestrak_urls` item in config file of the wrong type, see README")
+	}
+
+	urlAllSatellites := fmt.Sprintf("%v", celestrakURLs["all_satellites"])
+	urlGeoSatellites := fmt.Sprintf("%v", celestrakURLs["geo_satellites"])
+
+	if urlAllSatellites == "" || urlGeoSatellites == "" {
+		return 0, "", "", errors.New("Missing either `all_satellites` or `geo_satellites` celestrak URLs, see README")
+	}
+
+	return celestrakRefreshRate, urlAllSatellites, urlGeoSatellites, nil
 }
 
 //GetDataSource return server data source
