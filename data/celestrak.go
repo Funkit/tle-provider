@@ -44,7 +44,7 @@ type CelestrakClient struct {
 	LastCelestrakPull time.Time
 	UpdatePeriod      float64
 	Lock              sync.Mutex
-	ServerConfig      map[string]string
+	ServerConfig      map[string]interface{}
 }
 
 // NewCelestrakClient Generates a new CelestrakClient from the information in the configuration file
@@ -55,7 +55,7 @@ func NewCelestrakClient(config map[string]interface{}) (*CelestrakClient, error)
 		return nil, err
 	}
 
-	srvConfig := map[string]string{
+	srvConfig := map[string]interface{}{
 		"celestrak_refresh_rate_hours": fmt.Sprintf("%v", celestrakRefreshRate),
 		"celestrak_url_all_satellites": urlAllSatellites,
 		"celestrak_url_geo_satellites": urlGeoSatellites,
@@ -103,7 +103,7 @@ func (cc *CelestrakClient) GetDataSource() string {
 }
 
 //GetConfig return server configuration
-func (cc *CelestrakClient) GetConfig() (map[string]string, error) {
+func (cc *CelestrakClient) GetConfig() (map[string]interface{}, error) {
 	return cc.ServerConfig, nil
 }
 

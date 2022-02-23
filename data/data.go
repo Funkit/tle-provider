@@ -12,5 +12,5 @@ type Satellite struct {
 type Source interface {
 	GetData() ([]Satellite, error)
 	GetDataSource() string
-	GetConfig() (map[string]string, error)
+	GetConfig() (map[string]interface{}, error)
 }
