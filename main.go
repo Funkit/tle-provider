@@ -17,6 +17,8 @@ func NewDataSource(info map[string]interface{}) (data.Source, error) {
 
 	if info["data_source"] == "celestrak" {
 		return data.NewCelestrakClient(info)
+	} else if info["data_source"] == "postgresql" {
+		return data.NewPostgreSQLClient(info)
 	}
 	return nil, errors.New("data source not supported")
 }

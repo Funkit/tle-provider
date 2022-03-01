@@ -118,7 +118,7 @@ func (cc *CelestrakClient) GetData() ([]Satellite, error) {
 	if elapsedTime.Hours() >= cc.UpdatePeriod {
 		fmt.Println("Pulling from Celestrak")
 		cc.LastCelestrakPull = time.Now()
-		if err := cc.GetCelestrakData(); err != nil {
+		if err := cc.getCelestrakData(); err != nil {
 			return []Satellite{}, err
 		}
 	}
@@ -139,8 +139,8 @@ func (cc *CelestrakClient) GetData() ([]Satellite, error) {
 	return tleList, nil
 }
 
-// GetCelestrakData Get data from celestrak
-func (cc *CelestrakClient) GetCelestrakData() error {
+// getCelestrakData Get data from celestrak
+func (cc *CelestrakClient) getCelestrakData() error {
 	req, err := http.NewRequest(http.MethodGet, cc.AllSatellitesURL, nil)
 	if err != nil {
 		return err
