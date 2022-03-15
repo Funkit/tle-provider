@@ -3,11 +3,13 @@ name: Build the TLE provider and release if tagged
 on:
   push:
 
+env:
+  artifact_name_linux: tle-provider-linux
+  artifact_name_windows: tle-provider-windows
+
 jobs:
   build-linux:
     runs-on: ubuntu-latest
-    env:
-      artifact_name: ./tle-provider-linux
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -16,20 +18,19 @@ jobs:
       with:
         go-version: 1.18
     - name: Build
-      run: go build -ldflags="-X 'main.Version=${{github.ref_name}}'" -o ${{ env.artifact_name }}
+      run: go build -ldflags="-X 'main.Version=${{github.ref_name}}'" -o ${{ env.artifact_name_linux }}
     - name: Test
       run: go test -v ./...
-    - name: Release with Notes
-      uses: softprops/action-gh-release@v1
+    - name: Upload resulting artifact
       if: startsWith(github.ref, 'refs/tags/')
+      uses: actions/upload-artifact@v2
       with:
-        files: ${{ env.artifact_name }}
-      env:
-        GITHUB_TOKEN: ${{ secrets.REPOSITORY_RELEASE_TOKEN }}
+        name: ${{ env.artifact_name_linux }}
+        path: ${{ env.artifact_name_linux }}
   build-windows:
     runs-on: windows-latest
     env:
-      artifact_name: ./tle-provider-windows.exe
+      artifact_name: tle-provider-windows
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -38,14 +39,37 @@ jobs:
       with:
         go-version: 1.18
     - name: Build
-      run: go build -ldflags="-X 'main.Version=${{github.ref_name}}'" -o ${{ env.artifact_name }}
+      run: go build -ldflags="-X 'main.Version=${{github.ref_name}}'" -o ${{ env.artifact_name_windows }}.exe
     - name: Test
       run: go test -v ./...
+    - name: Upload resulting artifact
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ env.artifact_name_windows }}
+        path: ${{ env.artifact_name_windows }}
+    
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+    - name: download linux artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: ${{ env.artifact_name_linux }}
+        path: ${{ env.artifact_name_linux }}
+    - name: download windows artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: ${{ env.artifact_name_windows }}
+        path: ${{ env.artifact_name_windows }}
     - name: Release with Notes
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
       with:
-        files: ${{ env.artifact_name }}
+        files: |
+          ${{ env.artifact_name_linux }}
+          ${{ env.artifact_name_windows }}
       env:
         GITHUB_TOKEN: ${{ secrets.REPOSITORY_RELEASE_TOKEN }}
-

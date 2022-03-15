@@ -1,0 +1,5 @@
+{
+    "yaml.schemas": {
+        "https://json.schemastore.org/github-action.json": "file:///d%3A/Dev/Go/src/github.com/Funkit/tle-provider/.github/workflows/build.yml"
+    }
+}
