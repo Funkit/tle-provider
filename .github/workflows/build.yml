@@ -54,6 +54,8 @@ jobs:
     needs: [build-linux, build-windows]
     runs-on: ubuntu-latest
     steps:
+    - name: Checkout code to get configuration file and README
+      uses: actions/checkout@v3
     - name: download linux artifact
       uses: actions/download-artifact@v2
       with:
@@ -69,5 +71,6 @@ jobs:
         files: |
           ${{ env.artifact_name_linux }}
           ${{ env.artifact_name_windows }}
+          configuration.yml
       env:
         GITHUB_TOKEN: ${{ secrets.REPOSITORY_RELEASE_TOKEN }}
