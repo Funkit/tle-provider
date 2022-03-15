@@ -58,12 +58,10 @@ jobs:
       uses: actions/download-artifact@v2
       with:
         name: ${{ env.artifact_name_linux }}
-        path: ${{ env.artifact_name_linux }}
     - name: download windows artifact
       uses: actions/download-artifact@v2
       with:
         name: ${{ env.artifact_name_windows }}
-        path: ${{ env.artifact_name_windows }}
     - name: Release with Notes
       uses: softprops/action-gh-release@v1
       if: startsWith(github.ref, 'refs/tags/')
