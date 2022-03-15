@@ -3,7 +3,7 @@ name: Build the TLE provider and release if tagged
 on:
   push:
   branches:
-      - main
+    - main
 
 env:
   artifact_name_linux: tle-provider-linux
