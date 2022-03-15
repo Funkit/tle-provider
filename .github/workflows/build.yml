@@ -5,7 +5,7 @@ on:
 
 env:
   artifact_name_linux: tle-provider-linux
-  artifact_name_windows: tle-provider-windows
+  artifact_name_windows: tle-provider-windows.exe
 
 jobs:
   build-linux:
@@ -39,7 +39,7 @@ jobs:
       with:
         go-version: 1.18
     - name: Build
-      run: go build -ldflags="-X 'main.Version=${{github.ref_name}}'" -o ${{ env.artifact_name_windows }}.exe
+      run: go build -ldflags="-X 'main.Version=${{github.ref_name}}'" -o ${{ env.artifact_name_windows }}
     - name: Test
       run: go test -v ./...
     - name: Upload resulting artifact
