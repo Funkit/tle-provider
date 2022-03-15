@@ -1,0 +1,76 @@
+name: Build the TLE provider and release if tagged
+
+on:
+  push:
+
+env:
+  artifact_name_linux: tle-provider-linux
+  artifact_name_windows: tle-provider-windows.exe
+
+jobs:
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.18
+    - name: Build
+      run: go build -ldflags="-X 'main.Version=${{github.ref_name}}'" -o ${{ env.artifact_name_linux }}
+    - name: Test
+      run: go test -v ./...
+    - name: Upload resulting artifact
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ env.artifact_name_linux }}
+        path: ${{ env.artifact_name_linux }}
+  build-windows:
+    runs-on: windows-latest
+    env:
+      artifact_name: tle-provider-windows
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.18
+    - name: Build
+      run: go build -ldflags="-X 'main.Version=${{github.ref_name}}'" -o ${{ env.artifact_name_windows }}
+    - name: Test
+      run: go test -v ./...
+    - name: Upload resulting artifact
+      if: startsWith(github.ref, 'refs/tags/')
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ env.artifact_name_windows }}
+        path: ${{ env.artifact_name_windows }}
+    
+  release:
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: [build-linux, build-windows]
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout code to get configuration file and README
+      uses: actions/checkout@v3
+    - name: download linux artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: ${{ env.artifact_name_linux }}
+    - name: download windows artifact
+      uses: actions/download-artifact@v2
+      with:
+        name: ${{ env.artifact_name_windows }}
+    - name: Release with Notes
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: |
+          ${{ env.artifact_name_linux }}
+          ${{ env.artifact_name_windows }}
+          configuration.yml
+      env:
+        GITHUB_TOKEN: ${{ secrets.REPOSITORY_RELEASE_TOKEN }}

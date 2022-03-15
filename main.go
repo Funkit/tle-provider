@@ -23,7 +23,11 @@ func NewDataSource(info map[string]interface{}) (data.Source, error) {
 	return nil, errors.New("data source not supported")
 }
 
+var Version = "development"
+
 func main() {
+	fmt.Println("Version:\t", Version)
+
 	config, err := utils.GetConfiguration()
 	if err != nil {
 		panic(err)
