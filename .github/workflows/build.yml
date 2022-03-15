@@ -2,7 +2,6 @@ name: Build the TLE provider
 
 on:
   push:
-    branches: [ main ]
     tags:
       - 'v[0-9]+.[0-9]+.[0-9]+*'
 
@@ -19,7 +18,7 @@ jobs:
       with:
         go-version: 1.18
     - name: Build
-      run: go build -o $artifact_name -v ./...
+      run: go build -v -o $artifact_name
     - name: Test
       run: go test -v ./...
     - name: Release with Notes
