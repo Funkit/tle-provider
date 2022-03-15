@@ -8,7 +8,7 @@ on:
 jobs:
   build:
     env:
-      artifact_name: tle-provider_${{github.ref_name}}.exe
+      artifact_name: ./tle-provider_${{github.ref_name}}.exe
     runs-on: ubuntu-latest
     steps:
     - name: Checkout code
@@ -18,9 +18,11 @@ jobs:
       with:
         go-version: 1.18
     - name: Build
-      run: go build -v -o $artifact_name
+      run: go build -o $artifact_name
     - name: Test
       run: go test -v ./...
+    - name: list files
+      run: ls
     - name: Release with Notes
       uses: softprops/action-gh-release@v1
       with:
