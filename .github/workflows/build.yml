@@ -1,15 +1,13 @@
-name: Build the TLE provider
+name: Build the TLE provider and release if tagged
 
 on:
   push:
-    tags:
-      - 'v*'
 
 jobs:
-  build:
+  build-linux:
     runs-on: ubuntu-latest
     env:
-      artifact_name: ./tle-provider.exe
+      artifact_name: ./tle-provider-linux
     steps:
     - name: Checkout code
       uses: actions/checkout@v3
@@ -23,6 +21,29 @@ jobs:
       run: go test -v ./...
     - name: Release with Notes
       uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
+      with:
+        files: ${{ env.artifact_name }}
+      env:
+        GITHUB_TOKEN: ${{ secrets.REPOSITORY_RELEASE_TOKEN }}
+  build-windows:
+    runs-on: windows-latest
+    env:
+      artifact_name: ./tle-provider-windows.exe
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+    - name: Set up Go
+      uses: actions/setup-go@v2
+      with:
+        go-version: 1.18
+    - name: Build
+      run: go build -ldflags="-X 'main.Version=${{github.ref_name}}'" -o ${{ env.artifact_name }}
+    - name: Test
+      run: go test -v ./...
+    - name: Release with Notes
+      uses: softprops/action-gh-release@v1
+      if: startsWith(github.ref, 'refs/tags/')
       with:
         files: ${{ env.artifact_name }}
       env:
