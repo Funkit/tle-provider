@@ -1,5 +1,0 @@
-output:
-  ./api/server-types.gen.go
-generate:
-  - types
-package: api

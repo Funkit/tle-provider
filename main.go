@@ -1,56 +1,37 @@
 package main
 
 import (
-	"errors"
-	"fmt"
-
 	"github.com/Funkit/tle-provider/api"
+	"log"
+
 	"github.com/Funkit/tle-provider/data"
 	"github.com/Funkit/tle-provider/utils"
-	"github.com/deepmap/oapi-codegen/pkg/middleware"
-	"github.com/labstack/echo/v4"
-	echomiddleware "github.com/labstack/echo/v4/middleware"
 )
 
-// NewDataSource Create data source
-func NewDataSource(info map[string]interface{}) (data.Source, error) {
-
-	if info["data_source"] == "celestrak" {
-		return data.NewCelestrakClient(info)
-	}
-	return nil, errors.New("data source not supported")
+var args struct {
+	ConfigFilePath string `arg:"required,-c" help:"path to the configuration file"`
 }
 
 var Version = "development"
 
 func main() {
-	fmt.Println("Version:\t", Version)
+	log.Println("Version:\t", Version)
 
-	config, err := utils.GetConfiguration()
+	config, err := utils.GenericYAMLParsing[utils.Info](args.ConfigFilePath)
 	if err != nil {
 		panic(err)
 	}
 
-	// TLE server setup
-	swagger, err := api.GetSwagger()
-	if err != nil {
-		panic(fmt.Errorf("Error loading swagger spec\n: %s", err))
-	}
-	swagger.Servers = nil
+	var source data.Source
 
-	dataSource, err := NewDataSource(config)
-	if err != nil {
+	switch config.DataSource {
+	case "celestrak":
+		source = data.NewCelestrakClient(config.CelestrakConfiguration.AllSatellitesURL, config.CelestrakConfiguration.GeoSatellitesURL, config.CelestrakConfiguration.RefreshRateHours)
+	}
+
+	server := api.NewServer(config.ServerPort, source)
+
+	if err := server.Run(); err != nil {
 		panic(err)
 	}
-
-	tleServer := api.NewTLEServer(dataSource)
-
-	// Echo router setup
-	e := echo.New()
-	e.Use(echomiddleware.Logger())
-	e.Use(middleware.OapiRequestValidator(swagger))
-	api.RegisterHandlers(e, tleServer)
-
-	// Start server
-	e.Logger.Fatal(e.Start(fmt.Sprintf("0.0.0.0:%d", config["server_port"])))
 }

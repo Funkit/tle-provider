@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -44,32 +45,19 @@ type CelestrakClient struct {
 	LastCelestrakPull time.Time
 	UpdatePeriod      float64
 	Lock              sync.Mutex
-	ServerConfig      map[string]interface{}
 }
 
 // NewCelestrakClient Generates a new CelestrakClient from the information in the configuration file
-func NewCelestrakClient(config map[string]interface{}) (*CelestrakClient, error) {
-
-	celestrakRefreshRate, urlAllSatellites, urlGeoSatellites, err := extractConfiguration(config)
-	if err != nil {
-		return nil, err
-	}
-
-	srvConfig := map[string]interface{}{
-		"celestrak_refresh_rate_hours": fmt.Sprintf("%v", celestrakRefreshRate),
-		"celestrak_url_all_satellites": urlAllSatellites,
-		"celestrak_url_geo_satellites": urlGeoSatellites,
-	}
+func NewCelestrakClient(allSatellitesURL, geoSatellitesURL string, refreshRateHours int) *CelestrakClient {
 
 	return &CelestrakClient{
 		httpClient:        &http.Client{},
-		AllSatellitesURL:  urlAllSatellites,
-		GeoSatellitesURL:  urlGeoSatellites,
+		AllSatellitesURL:  allSatellitesURL,
+		GeoSatellitesURL:  geoSatellitesURL,
 		OrbitalData:       []CelestrakData{},
 		LastCelestrakPull: time.Date(1970, 01, 01, 0, 0, 0, 1, time.UTC),
-		UpdatePeriod:      float64(celestrakRefreshRate),
-		ServerConfig:      srvConfig,
-	}, nil
+		UpdatePeriod:      float64(refreshRateHours),
+	}
 }
 
 func extractConfiguration(config map[string]interface{}) (refreshRate int, urlAll string, urlGeo string, err error) {
@@ -104,36 +92,36 @@ func (cc *CelestrakClient) GetDataSource() string {
 
 //GetConfig return server configuration
 func (cc *CelestrakClient) GetConfig() (map[string]interface{}, error) {
-	return cc.ServerConfig, nil
+	return nil, nil
 }
 
 // GetData Implementation of the Source interface for Celestrak
-func (cc *CelestrakClient) GetData() ([]Satellite, error) {
+func (cc *CelestrakClient) GetData() ([]*Satellite, error) {
 
 	elapsedTime := time.Now().Sub(cc.LastCelestrakPull)
 
-	fmt.Println("Elapsed time: ", elapsedTime)
-	fmt.Println("Last Celestrak Pull: ", cc.LastCelestrakPull)
+	log.Println("Elapsed time: ", elapsedTime)
+	log.Println("Last Celestrak Pull: ", cc.LastCelestrakPull)
 
 	if elapsedTime.Hours() >= cc.UpdatePeriod {
-		fmt.Println("Pulling from Celestrak")
+		log.Println("Pulling from Celestrak")
 		cc.LastCelestrakPull = time.Now()
 		if err := cc.GetCelestrakData(); err != nil {
-			return []Satellite{}, err
+			return nil, err
 		}
 	}
 
-	var tleList []Satellite
+	var tleList []*Satellite
 
 	for _, element := range cc.OrbitalData {
 
-		fmt.Printf("Satellite: %v\n", element.ObjectName)
+		log.Printf("Satellite: %v\n", element.ObjectName)
 
 		sat, err := convertToTLE(element)
 		if err != nil {
-			return []Satellite{}, err
+			return nil, err
 		}
-		tleList = append(tleList, sat)
+		tleList = append(tleList, &sat)
 	}
 
 	return tleList, nil
