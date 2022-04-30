@@ -22,7 +22,7 @@ func NewServer(port int, source data.Source) *Server {
 	return &Server{
 		source: source,
 		router: chi.NewRouter(),
-		Port:   0,
+		Port:   port,
 	}
 }
 

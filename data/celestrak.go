@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -100,11 +99,7 @@ func (cc *CelestrakClient) GetData() ([]*Satellite, error) {
 
 	elapsedTime := time.Now().Sub(cc.LastCelestrakPull)
 
-	log.Println("Elapsed time: ", elapsedTime)
-	log.Println("Last Celestrak Pull: ", cc.LastCelestrakPull)
-
 	if elapsedTime.Hours() >= cc.UpdatePeriod {
-		log.Println("Pulling from Celestrak")
 		cc.LastCelestrakPull = time.Now()
 		if err := cc.GetCelestrakData(); err != nil {
 			return nil, err
@@ -114,9 +109,6 @@ func (cc *CelestrakClient) GetData() ([]*Satellite, error) {
 	var tleList []*Satellite
 
 	for _, element := range cc.OrbitalData {
-
-		log.Printf("Satellite: %v\n", element.ObjectName)
-
 		sat, err := convertToTLE(element)
 		if err != nil {
 			return nil, err
