@@ -28,6 +28,7 @@ func GenerateRenderList(satList []*Satellite) []render.Renderer {
 // Source interface for either Celestrak or Skyminer data
 type Source interface {
 	GetData() ([]*Satellite, error)
+	GetSatellite(satelliteName string) (*Satellite, error)
 	GetDataSource() string
 	GetConfig() (map[string]interface{}, error)
 }

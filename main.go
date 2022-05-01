@@ -31,7 +31,10 @@ func main() {
 
 	switch config.DataSource {
 	case "celestrak":
-		source = data.NewCelestrakClient(config.CelestrakConfiguration.AllSatellitesURL, config.CelestrakConfiguration.GeoSatellitesURL, config.CelestrakConfiguration.RefreshRateHours)
+		source = data.NewCelestrakClient(
+			config.CelestrakConfiguration.AllSatellitesURL,
+			config.CelestrakConfiguration.GeoSatellitesURL,
+			config.CelestrakConfiguration.RefreshRateHours)
 	}
 
 	server := api.NewServer(config.ServerPort, source)

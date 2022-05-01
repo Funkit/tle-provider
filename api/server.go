@@ -44,6 +44,7 @@ func (s *Server) Run() error {
 
 func (s *Server) InitializeRoutes() {
 	s.router.Get("/tle", s.getTLEList())
+	s.router.Get("/tle/{satellite}", s.getTLE())
 }
 
 func (s *Server) getTLEList() http.HandlerFunc {
@@ -56,6 +57,21 @@ func (s *Server) getTLEList() http.HandlerFunc {
 
 		renderList := data.GenerateRenderList(satelliteList)
 		if err := render.RenderList(w, r, renderList); err != nil {
+			apierror.Handle(w, r, apierror.Wrap(err, apierror.ErrRender))
+		}
+	}
+}
+
+func (s *Server) getTLE() http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		satelliteParam := chi.URLParam(r, "satellite")
+		satellite, err := s.source.GetSatellite(satelliteParam)
+		if err != nil {
+			apierror.Handle(w, r, err)
+			return
+		}
+
+		if err := render.Render(w, r, satellite); err != nil {
 			apierror.Handle(w, r, apierror.Wrap(err, apierror.ErrRender))
 		}
 	}

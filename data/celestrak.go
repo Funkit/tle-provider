@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/Funkit/tle-provider/apierror"
 	"io/ioutil"
 	"net/http"
 	"regexp"
@@ -37,13 +38,15 @@ type CelestrakData struct {
 
 // CelestrakClient implementation of the Source interface for Celestrak
 type CelestrakClient struct {
-	httpClient        *http.Client
-	AllSatellitesURL  string
-	GeoSatellitesURL  string
-	OrbitalData       []CelestrakData
-	LastCelestrakPull time.Time
-	UpdatePeriod      float64
-	Lock              sync.Mutex
+	httpClient         *http.Client
+	AllSatellitesURL   string
+	GeoSatellitesURL   string
+	OrbitalData        []CelestrakData
+	TwoLineElements    []*Satellite
+	TwoLineElementsMap map[string]*Satellite
+	LastCelestrakPull  time.Time
+	UpdatePeriod       float64
+	Lock               sync.Mutex
 }
 
 // NewCelestrakClient Generates a new CelestrakClient from the information in the configuration file
@@ -104,19 +107,30 @@ func (cc *CelestrakClient) GetData() ([]*Satellite, error) {
 		if err := cc.GetCelestrakData(); err != nil {
 			return nil, err
 		}
-	}
 
-	var tleList []*Satellite
+		var tleList []*Satellite
+		cc.TwoLineElementsMap = make(map[string]*Satellite)
 
-	for _, element := range cc.OrbitalData {
-		sat, err := convertToTLE(element)
-		if err != nil {
-			return nil, err
+		for _, element := range cc.OrbitalData {
+			sat, err := convertToTLE(element)
+			if err != nil {
+				return nil, err
+			}
+			tleList = append(tleList, &sat)
+			cc.TwoLineElementsMap[sat.SatelliteName] = &sat
 		}
-		tleList = append(tleList, &sat)
+		cc.TwoLineElements = tleList
 	}
 
-	return tleList, nil
+	return cc.TwoLineElements, nil
+}
+
+func (cc *CelestrakClient) GetSatellite(satelliteName string) (*Satellite, error) {
+	if cc.TwoLineElementsMap[satelliteName] == nil {
+		return nil, apierror.Wrap(fmt.Errorf("Satellite %v not found", satelliteName), apierror.ErrNotFound)
+	}
+
+	return cc.TwoLineElementsMap[satelliteName], nil
 }
 
 // GetCelestrakData Get data from celestrak
@@ -128,21 +142,26 @@ func (cc *CelestrakClient) GetCelestrakData() error {
 
 	response, err := cc.httpClient.Do(req)
 	if err != nil {
-		return err
+		return apierror.Wrap(err, apierror.ErrInternal)
 	}
 	defer response.Body.Close()
 
 	respBody, err := ioutil.ReadAll(response.Body)
 	if err != nil {
-		return err
+		return apierror.Wrap(err, apierror.ErrInternal)
 	}
 
 	if response.StatusCode >= 400 {
-		return errors.New(fmt.Sprintln("HTTP code:", response.StatusCode, "response body:", string(respBody)))
+		return apierror.Wrap(fmt.Errorf("failed to query data from celestrak, response error code = %v", response.StatusCode), apierror.ErrNotFound)
 	}
 
 	cc.OrbitalData = nil
-	return json.Unmarshal(respBody, &cc.OrbitalData)
+
+	if err := json.Unmarshal(respBody, &cc.OrbitalData); err != nil {
+		return apierror.Wrap(err, apierror.ErrInternal)
+	}
+
+	return nil
 }
 
 // convertToTLE converts JSON from Celestrak GP prototype to TLE. See wikipedia page for two line elements for an explanation of the fields
@@ -150,17 +169,17 @@ func convertToTLE(data CelestrakData) (Satellite, error) {
 
 	cosparID, err := objectIDToCOSPARID(data.ObjectID)
 	if err != nil {
-		return Satellite{}, err
+		return Satellite{}, apierror.Wrap(err, apierror.ErrRender)
 	}
 
 	year2Digits, err := getLast2DigitsOfYear(data.Epoch)
 	if err != nil {
-		return Satellite{}, err
+		return Satellite{}, apierror.Wrap(err, apierror.ErrRender)
 	}
 
 	dayOfYear, err := getDayOfYear(data.Epoch)
 	if err != nil {
-		return Satellite{}, err
+		return Satellite{}, apierror.Wrap(err, apierror.ErrRender)
 	}
 
 	// Line 1 formatting
