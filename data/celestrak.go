@@ -46,7 +46,7 @@ type CelestrakClient struct {
 	TwoLineElementsMap map[string]*Satellite
 	LastCelestrakPull  time.Time
 	UpdatePeriod       float64
-	Lock               sync.Mutex
+	mu                 sync.RWMutex
 }
 
 // NewCelestrakClient Generates a new CelestrakClient from the information in the configuration file
@@ -103,29 +103,43 @@ func (cc *CelestrakClient) GetData() ([]*Satellite, error) {
 	elapsedTime := time.Now().Sub(cc.LastCelestrakPull)
 
 	if elapsedTime.Hours() >= cc.UpdatePeriod {
-		cc.LastCelestrakPull = time.Now()
-		if err := cc.GetCelestrakData(); err != nil {
+		if err := cc.update(); err != nil {
 			return nil, err
 		}
-
-		var tleList []*Satellite
-		cc.TwoLineElementsMap = make(map[string]*Satellite)
-
-		for _, element := range cc.OrbitalData {
-			sat, err := convertToTLE(element)
-			if err != nil {
-				return nil, err
-			}
-			tleList = append(tleList, &sat)
-			cc.TwoLineElementsMap[sat.SatelliteName] = &sat
-		}
-		cc.TwoLineElements = tleList
 	}
 
+	cc.mu.RLock()
+	defer cc.mu.RUnlock()
 	return cc.TwoLineElements, nil
 }
 
+func (cc *CelestrakClient) update() error {
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
+	cc.LastCelestrakPull = time.Now()
+	if err := cc.GetCelestrakData(); err != nil {
+		return err
+	}
+
+	var tleList []*Satellite
+	cc.TwoLineElementsMap = make(map[string]*Satellite)
+
+	for _, element := range cc.OrbitalData {
+		sat, err := convertToTLE(element)
+		if err != nil {
+			return err
+		}
+		tleList = append(tleList, &sat)
+		cc.TwoLineElementsMap[sat.SatelliteName] = &sat
+	}
+	cc.TwoLineElements = tleList
+
+	return nil
+}
+
 func (cc *CelestrakClient) GetSatellite(satelliteName string) (*Satellite, error) {
+	cc.mu.RLock()
+	defer cc.mu.RUnlock()
 	if cc.TwoLineElementsMap[satelliteName] == nil {
 		return nil, apierror.Wrap(fmt.Errorf("Satellite %v not found", satelliteName), apierror.ErrNotFound)
 	}
