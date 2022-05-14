@@ -12,17 +12,19 @@ import (
 )
 
 type Server struct {
-	source data.Source
-	router chi.Router
-	Port   int
-	mu     sync.RWMutex
+	source                    data.Source
+	router                    chi.Router
+	Port                      int
+	CelestrakRefreshRateHours int
+	mu                        sync.RWMutex
 }
 
-func NewServer(port int, source data.Source) *Server {
+func NewServer(port int, source data.Source, celestrakRefreshRateHours int) *Server {
 	return &Server{
-		source: source,
-		router: chi.NewRouter(),
-		Port:   port,
+		source:                    source,
+		router:                    chi.NewRouter(),
+		Port:                      port,
+		CelestrakRefreshRateHours: celestrakRefreshRateHours,
 	}
 }
 

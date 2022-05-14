@@ -24,6 +24,14 @@ var (
 		HTTPStatusCode: http.StatusUnprocessableEntity,
 		Message:        "Error Rendering Response",
 	}
+	ErrTimeout = &APIError{
+		HTTPStatusCode: http.StatusRequestTimeout,
+		Message:        "Query timeout",
+	}
+	ErrCancelled = &APIError{
+		HTTPStatusCode: http.StatusBadRequest,
+		Message:        "Query cancelled",
+	}
 )
 
 type APIError struct {
