@@ -10,22 +10,26 @@ import (
 	"log"
 	"net/http"
 	"sync"
+	"time"
 )
 
 type Server struct {
-	source                    data.Source
-	router                    chi.Router
-	Port                      int
-	CelestrakRefreshRateHours int
-	mu                        sync.RWMutex
+	source               data.Source
+	router               chi.Router
+	Port                 int
+	CelestrakRefreshRate time.Duration
+	mu                   sync.RWMutex
+	done                 chan struct{}
 }
 
-func NewServer(port int, source data.Source, celestrakRefreshRateHours int) *Server {
+func NewServer(port int, source data.Source, RefreshRateHours int) *Server {
+	done := make(chan struct{})
 	return &Server{
-		source:                    source,
-		router:                    chi.NewRouter(),
-		Port:                      port,
-		CelestrakRefreshRateHours: celestrakRefreshRateHours,
+		source:               source,
+		router:               chi.NewRouter(),
+		Port:                 port,
+		CelestrakRefreshRate: time.Duration(RefreshRateHours) * time.Hour,
+		done:                 done,
 	}
 }
 
@@ -39,7 +43,11 @@ func (s *Server) SubRoutes(baseURL string, r chi.Router) {
 
 func (s *Server) Run() error {
 	log.Printf("Listening on port %v\n", s.Port)
+	if s.source.GetDataSource() == "celestrak" {
+		s.source.Update(s.done, s.CelestrakRefreshRate)
+	}
 	if err := http.ListenAndServe(fmt.Sprintf(":%v", s.Port), s.router); err != nil {
+		s.done <- struct{}{}
 		panic(err)
 	}
 	return nil

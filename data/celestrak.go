@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/Funkit/tle-provider/apierror"
 	"io/ioutil"
+	"log"
 	"net/http"
 	"regexp"
 	"strings"
@@ -62,34 +63,9 @@ func NewCelestrakClient(allSatellitesURL, geoSatellitesURL string, refreshRateHo
 	}
 }
 
-func extractConfiguration(config map[string]interface{}) (refreshRate int, urlAll string, urlGeo string, err error) {
-	if config["celestrak_urls"] == nil {
-		return 0, "", "", errors.New("Missing celestrak URLs, see README")
-	}
-
-	celestrakRefreshRate, isOfCorrectType := config["celestrak_refresh_rate_hours"].(int)
-	if !isOfCorrectType {
-		return 0, "", "", errors.New("`celestrak_refresh_rate_hours` item in config file of the wrong type, see README")
-	}
-
-	celestrakURLs, isOfCorrectType := config["celestrak_urls"].(map[interface{}]interface{})
-	if !isOfCorrectType {
-		return 0, "", "", errors.New("`celestrak_urls` item in config file of the wrong type, see README")
-	}
-
-	urlAllSatellites := fmt.Sprintf("%v", celestrakURLs["all_satellites"])
-	urlGeoSatellites := fmt.Sprintf("%v", celestrakURLs["geo_satellites"])
-
-	if urlAllSatellites == "" || urlGeoSatellites == "" {
-		return 0, "", "", errors.New("Missing either `all_satellites` or `geo_satellites` celestrak URLs, see README")
-	}
-
-	return celestrakRefreshRate, urlAllSatellites, urlGeoSatellites, nil
-}
-
 //GetDataSource return server data source
 func (cc *CelestrakClient) GetDataSource() string {
-	return "Celestrak"
+	return "celestrak"
 }
 
 //GetConfig return server configuration
@@ -97,48 +73,97 @@ func (cc *CelestrakClient) GetConfig() (map[string]interface{}, error) {
 	return nil, nil
 }
 
-func (cc *CelestrakClient) Update() chan *SatelliteErr {
-	output := make(chan *SatelliteErr)
+// getCelestrakData Get data from celestrak
+func (cc *CelestrakClient) getCelestrakData() ([]CelestrakData, error) {
+	req, err := http.NewRequest(http.MethodGet, cc.AllSatellitesURL, nil)
+	if err != nil {
+		return nil, err
+	}
 
-	return output
+	response, err := cc.httpClient.Do(req)
+	if err != nil {
+		return nil, apierror.Wrap(err, apierror.ErrInternal)
+	}
+	defer response.Body.Close()
+
+	respBody, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, apierror.Wrap(err, apierror.ErrInternal)
+	}
+
+	if response.StatusCode >= 400 {
+		return nil, apierror.Wrap(fmt.Errorf("failed to query data from celestrak, response error code = %v", response.StatusCode), apierror.ErrNotFound)
+	}
+
+	var output []CelestrakData
+
+	if err := json.Unmarshal(respBody, &output); err != nil {
+		return nil, apierror.Wrap(err, apierror.ErrInternal)
+	}
+
+	return output, nil
+}
+
+func (cc *CelestrakClient) Update(done <-chan struct{}, period time.Duration) {
+	if err := cc.update(); err != nil {
+		log.Println(err.Error())
+	}
+	go func() {
+		for {
+			select {
+			case <-done:
+				break
+			case <-time.After(period):
+				if err := cc.update(); err != nil {
+					log.Println(err.Error())
+				}
+			}
+		}
+	}()
 }
 
 // GetData Implementation of the Source interface for Celestrak
 func (cc *CelestrakClient) GetData() ([]*Satellite, error) {
-
-	elapsedTime := time.Now().Sub(cc.LastCelestrakPull)
-
-	if elapsedTime.Hours() >= cc.UpdatePeriod {
-		if err := cc.update(); err != nil {
-			return nil, err
-		}
-	}
-
 	cc.mu.RLock()
 	defer cc.mu.RUnlock()
+	if len(cc.TwoLineElements) == 0 {
+		return nil, apierror.Wrap(fmt.Errorf("No satellite found"), apierror.ErrNotFound)
+	}
 	return cc.TwoLineElements, nil
 }
 
 func (cc *CelestrakClient) update() error {
-	cc.mu.Lock()
-	defer cc.mu.Unlock()
-	cc.LastCelestrakPull = time.Now()
-	if err := cc.GetCelestrakData(); err != nil {
+	satData, err := cc.getCelestrakData()
+	if err != nil {
 		return err
 	}
 
+	var wg sync.WaitGroup
+	output := make(chan *Satellite, len(satData))
+
+	for i := 0; i < len(satData); i++ {
+		wg.Add(1)
+		go func(data CelestrakData) {
+			defer wg.Done()
+			sat, _ := convertToTLE(data)
+			output <- &sat
+		}(satData[i])
+	}
+
+	wg.Wait()
+	close(output)
+	cc.mu.Lock()
+	defer cc.mu.Unlock()
 	var tleList []*Satellite
 	cc.TwoLineElementsMap = make(map[string]*Satellite)
+	for element := range output {
+		tleList = append(tleList, element)
+		cc.TwoLineElementsMap[element.SatelliteName] = element
 
-	for _, element := range cc.OrbitalData {
-		sat, err := convertToTLE(element)
-		if err != nil {
-			return err
-		}
-		tleList = append(tleList, &sat)
-		cc.TwoLineElementsMap[sat.SatelliteName] = &sat
 	}
 	cc.TwoLineElements = tleList
+	cc.LastCelestrakPull = time.Now()
+	log.Printf("data successfully pulled from celestrak at %s\n", time.Now().Format("2006-01-02T15:04:05Z"))
 
 	return nil
 }
@@ -161,37 +186,6 @@ func (cc *CelestrakClient) GetSatellite(satelliteName string) chan *SatelliteErr
 		}
 	}()
 	return output
-}
-
-// GetCelestrakData Get data from celestrak
-func (cc *CelestrakClient) GetCelestrakData() error {
-	req, err := http.NewRequest(http.MethodGet, cc.AllSatellitesURL, nil)
-	if err != nil {
-		return err
-	}
-
-	response, err := cc.httpClient.Do(req)
-	if err != nil {
-		return apierror.Wrap(err, apierror.ErrInternal)
-	}
-	defer response.Body.Close()
-
-	respBody, err := ioutil.ReadAll(response.Body)
-	if err != nil {
-		return apierror.Wrap(err, apierror.ErrInternal)
-	}
-
-	if response.StatusCode >= 400 {
-		return apierror.Wrap(fmt.Errorf("failed to query data from celestrak, response error code = %v", response.StatusCode), apierror.ErrNotFound)
-	}
-
-	cc.OrbitalData = nil
-
-	if err := json.Unmarshal(respBody, &cc.OrbitalData); err != nil {
-		return apierror.Wrap(err, apierror.ErrInternal)
-	}
-
-	return nil
 }
 
 // convertToTLE converts JSON from Celestrak GP prototype to TLE. See wikipedia page for two line elements for an explanation of the fields

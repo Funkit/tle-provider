@@ -3,6 +3,7 @@ package data
 import (
 	"github.com/go-chi/render"
 	"net/http"
+	"time"
 )
 
 // Satellite data structure for each satellite
@@ -32,6 +33,7 @@ func GenerateRenderList(satList []*Satellite) []render.Renderer {
 
 // Source interface for either Celestrak or Skyminer data
 type Source interface {
+	Update(done <-chan struct{}, period time.Duration)
 	GetData() ([]*Satellite, error)
 	GetSatellite(satelliteName string) chan *SatelliteErr
 	GetDataSource() string
