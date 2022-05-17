@@ -97,6 +97,12 @@ func (cc *CelestrakClient) GetConfig() (map[string]interface{}, error) {
 	return nil, nil
 }
 
+func (cc *CelestrakClient) Update() chan *SatelliteErr {
+	output := make(chan *SatelliteErr)
+
+	return output
+}
+
 // GetData Implementation of the Source interface for Celestrak
 func (cc *CelestrakClient) GetData() ([]*Satellite, error) {
 
@@ -137,14 +143,24 @@ func (cc *CelestrakClient) update() error {
 	return nil
 }
 
-func (cc *CelestrakClient) GetSatellite(satelliteName string) (*Satellite, error) {
-	cc.mu.RLock()
-	defer cc.mu.RUnlock()
-	if cc.TwoLineElementsMap[satelliteName] == nil {
-		return nil, apierror.Wrap(fmt.Errorf("Satellite %v not found", satelliteName), apierror.ErrNotFound)
-	}
-
-	return cc.TwoLineElementsMap[satelliteName], nil
+func (cc *CelestrakClient) GetSatellite(satelliteName string) chan *SatelliteErr {
+	output := make(chan *SatelliteErr)
+	go func() {
+		cc.mu.RLock()
+		defer cc.mu.RUnlock()
+		if cc.TwoLineElementsMap[satelliteName] == nil {
+			output <- &SatelliteErr{
+				Err: apierror.Wrap(fmt.Errorf("Satellite %v not found", satelliteName), apierror.ErrNotFound),
+				Sat: nil,
+			}
+		} else {
+			output <- &SatelliteErr{
+				Err: nil,
+				Sat: cc.TwoLineElementsMap[satelliteName],
+			}
+		}
+	}()
+	return output
 }
 
 // GetCelestrakData Get data from celestrak

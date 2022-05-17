@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"fmt"
 	"github.com/Funkit/tle-provider/apierror"
 	"github.com/Funkit/tle-provider/data"
@@ -67,14 +68,27 @@ func (s *Server) getTLEList() http.HandlerFunc {
 func (s *Server) getTLE() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		satelliteParam := chi.URLParam(r, "satellite")
-		satellite, err := s.source.GetSatellite(satelliteParam)
-		if err != nil {
-			apierror.Handle(w, r, err)
-			return
-		}
 
-		if err := render.Render(w, r, satellite); err != nil {
-			apierror.Handle(w, r, apierror.Wrap(err, apierror.ErrRender))
+		output := s.source.GetSatellite(satelliteParam)
+
+		select {
+		case <-r.Context().Done():
+			switch r.Context().Err() {
+			case context.DeadlineExceeded:
+				apierror.Handle(w, r, apierror.Wrap(fmt.Errorf("timeout writing and checking multiple points"), apierror.ErrTimeout))
+				break
+			default:
+				apierror.Handle(w, r, apierror.Wrap(fmt.Errorf("query canceled"), apierror.ErrCancelled))
+				break
+			}
+		case satelliteErr := <-output:
+			if satelliteErr.Err != nil {
+				apierror.Handle(w, r, satelliteErr.Err)
+			} else {
+				if err := render.Render(w, r, satelliteErr.Sat); err != nil {
+					apierror.Handle(w, r, apierror.Wrap(err, apierror.ErrRender))
+				}
+			}
 		}
 	}
 }
