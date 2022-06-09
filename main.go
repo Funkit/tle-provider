@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/Funkit/go-utils/utils"
 	"github.com/Funkit/tle-provider/api"
 	"github.com/Funkit/tle-provider/data"
 	"github.com/alexflint/go-arg"
@@ -8,7 +9,7 @@ import (
 	"github.com/go-chi/render"
 	"log"
 
-	"github.com/Funkit/tle-provider/utils"
+	tleutils "github.com/Funkit/tle-provider/utils"
 )
 
 var args struct {
@@ -22,7 +23,7 @@ func main() {
 
 	arg.MustParse(&args)
 
-	config, err := utils.GenericYAMLParsing[utils.Info](args.ConfigFilePath)
+	config, err := utils.GenericYAMLParsing[tleutils.Info](args.ConfigFilePath)
 	if err != nil {
 		panic(err)
 	}
