@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Funkit/tle-provider/utils"
+	"github.com/Funkit/go-utils/utils"
 )
 
 // CelestrakData structure used to parse Celestrak response when using the JSON API

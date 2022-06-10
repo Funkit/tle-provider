@@ -6,6 +6,27 @@ import (
 	"time"
 )
 
+//Info Receiving structure when parsing the configuration file
+type Info struct {
+	ServerPort             int                    `yaml:"server_port"`
+	DataSource             string                 `yaml:"data_source"`
+	CelestrakConfiguration CelestrakConfiguration `yaml:"celestrak_configuration"`
+}
+
+type CelestrakConfiguration struct {
+	AllSatellitesURL string `yaml:"all_satellites_url"`
+	GeoSatellitesURL string `yaml:"geo_satellites_url"`
+	RefreshRateHours int    `yaml:"celestrak_refresh_rate_hours"`
+}
+
+func (i Info) IsValid() bool {
+	return i.ServerPort != 0 &&
+		i.DataSource != "" &&
+		i.CelestrakConfiguration.RefreshRateHours != 0 &&
+		i.CelestrakConfiguration.GeoSatellitesURL != "" &&
+		i.CelestrakConfiguration.AllSatellitesURL != ""
+}
+
 // Satellite data structure for each satellite
 type Satellite struct {
 	SatelliteName string `json:"satellite_name"`

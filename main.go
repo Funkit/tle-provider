@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"github.com/Funkit/go-utils/utils"
 	"github.com/Funkit/tle-provider/api"
 	"github.com/Funkit/tle-provider/data"
@@ -8,8 +9,6 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"log"
-
-	tleutils "github.com/Funkit/tle-provider/utils"
 )
 
 var args struct {
@@ -23,9 +22,13 @@ func main() {
 
 	arg.MustParse(&args)
 
-	config, err := utils.GenericYAMLParsing[tleutils.Info](args.ConfigFilePath)
+	config, err := utils.GenericYAMLParsing[data.Info](args.ConfigFilePath)
 	if err != nil {
 		panic(err)
+	}
+
+	if !config.IsValid() {
+		panic(fmt.Errorf("invalid configuration file format"))
 	}
 
 	var source data.Source
