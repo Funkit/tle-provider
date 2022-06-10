@@ -16,14 +16,18 @@ type Satellite struct {
 
 type SatelliteErr struct {
 	Err error
-	Sat *Satellite
+	Sat Satellite
 }
 
-func (s *Satellite) Render(w http.ResponseWriter, r *http.Request) error {
+func (s Satellite) Render(w http.ResponseWriter, r *http.Request) error {
 	return nil
 }
 
-func GenerateRenderList(satList []*Satellite) []render.Renderer {
+func (s Satellite) IsNull() bool {
+	return len(s.TLELine1) != 69
+}
+
+func GenerateRenderList(satList []Satellite) []render.Renderer {
 	var renderList []render.Renderer
 	for _, sat := range satList {
 		renderList = append(renderList, sat)
@@ -34,8 +38,8 @@ func GenerateRenderList(satList []*Satellite) []render.Renderer {
 // Source interface for either Celestrak or Skyminer data
 type Source interface {
 	Update(done <-chan struct{}, period time.Duration)
-	GetData() ([]*Satellite, error)
-	GetSatellite(satelliteName string) chan *SatelliteErr
+	GetData() ([]Satellite, error)
+	GetSatellite(satelliteName string) chan SatelliteErr
 	GetDataSource() string
 	GetConfig() (map[string]interface{}, error)
 }

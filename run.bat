@@ -1,1 +1,0 @@
-tle-provider.exe -c configuration.yml
