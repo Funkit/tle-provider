@@ -5,5 +5,5 @@ celestrak_configuration:
   geo_satellites_url: "https://celestrak.com/NORAD/elements/gp.php?GROUP=geo&FORMAT=json"
   celestrak_refresh_rate_hours: 12
 file_source_configuration:
-  source_file_path: "./active_satellites_tle.txt"
+  source_file_path: "./samples/active_satellites_tle.txt"
   refresh_rate_seconds: 30

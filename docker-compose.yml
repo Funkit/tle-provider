@@ -1,0 +1,11 @@
+services:
+  kratos-tle-provider:
+    container_name: tle-provider
+    image: tle-provider
+    restart: always
+    ports:
+      - "5000:5000"
+    volumes:
+      - type: bind
+        source: ./configuration.yml
+        target: /home/appuser/configuration.yml
