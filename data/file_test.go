@@ -64,7 +64,6 @@ func TestFileSource_extractSatelliteData(t *testing.T) {
 				TwoLineElementsMap: tt.fields.TwoLineElementsMap,
 				LastCelestrakPull:  tt.fields.LastCelestrakPull,
 				UpdatePeriod:       tt.fields.UpdatePeriod,
-				mu:                 tt.fields.mu,
 			}
 			got, err := fs.extractSatelliteData()
 			if (err != nil) != tt.wantErr {
@@ -101,6 +100,27 @@ func Test_removeTrailingSpaces(t *testing.T) {
 				source: "CALSPHERE 1             ",
 			},
 			want: "CALSPHERE 1",
+		},
+		{
+			name: "empty string",
+			args: args{
+				source: "",
+			},
+			want: "",
+		},
+		{
+			name: "only spaces",
+			args: args{
+				source: "         ",
+			},
+			want: "",
+		},
+		{
+			name: "one character",
+			args: args{
+				source: "a",
+			},
+			want: "a",
 		},
 	}
 	for _, tt := range tests {

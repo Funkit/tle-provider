@@ -140,8 +140,10 @@ func removeTrailingSpaces(source string) string {
 		j--
 	}
 
-	if j <= 0 {
+	if j == 0 {
 		return source
+	} else if j < 0 {
+		return ""
 	} else {
 		return source[0 : j+1]
 	}
