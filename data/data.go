@@ -8,9 +8,15 @@ import (
 
 //Info Receiving structure when parsing the configuration file
 type Info struct {
-	ServerPort             int                    `yaml:"server_port"`
-	DataSource             string                 `yaml:"data_source"`
-	CelestrakConfiguration CelestrakConfiguration `yaml:"celestrak_configuration"`
+	ServerPort              int                     `yaml:"server_port"`
+	DataSource              string                  `yaml:"data_source"`
+	CelestrakConfiguration  CelestrakConfiguration  `yaml:"celestrak_configuration"`
+	FileSourceConfiguration FileSourceConfiguration `yaml:"file_source_configuration"`
+}
+
+type FileSourceConfiguration struct {
+	SourceFilePath     string `yaml:"source_file_path"`
+	RefreshRateSeconds int    `yaml:"refresh_rate_seconds"`
 }
 
 type CelestrakConfiguration struct {

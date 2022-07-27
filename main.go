@@ -13,12 +13,12 @@ import (
 
 var args struct {
 	ConfigFilePath string `arg:"required,-c" help:"path to the configuration file"`
+	Demo           bool   `default:"false"`
 }
 
 var Version = "development"
 
 func main() {
-	log.Println("Version:\t", Version)
 
 	arg.MustParse(&args)
 
@@ -31,6 +31,9 @@ func main() {
 		panic(fmt.Errorf("invalid configuration file format"))
 	}
 
+	log.Println("Version:\t ", Version)
+	log.Println("Data source: ", config.DataSource)
+
 	var source data.Source
 
 	switch config.DataSource {
@@ -39,9 +42,13 @@ func main() {
 			config.CelestrakConfiguration.AllSatellitesURL,
 			config.CelestrakConfiguration.GeoSatellitesURL,
 			config.CelestrakConfiguration.RefreshRateHours)
+	case "file":
+		source = data.NewFileSource(
+			config.FileSourceConfiguration.SourceFilePath,
+			config.FileSourceConfiguration.RefreshRateSeconds)
 	}
 
-	server := api.NewServer(config.ServerPort, source, config.CelestrakConfiguration.RefreshRateHours)
+	server := api.NewServer(config.ServerPort, source, config.CelestrakConfiguration.RefreshRateHours, config.FileSourceConfiguration.RefreshRateSeconds, args.Demo)
 	server.AddMiddlewares(middleware.Logger, render.SetContentType(render.ContentTypeJSON), middleware.Recoverer)
 	server.InitializeRoutes()
 

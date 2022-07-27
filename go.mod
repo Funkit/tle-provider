@@ -3,7 +3,7 @@ module github.com/Funkit/tle-provider
 go 1.18
 
 require (
-	github.com/Funkit/go-utils v0.0.0-20220610095601-b54e73f8edc8
+	github.com/Funkit/go-utils v0.0.0-20220726145741-48b45cd358da
 	github.com/alexflint/go-arg v1.4.3
 	github.com/go-chi/chi/v5 v5.0.0
 	github.com/go-chi/render v1.0.1

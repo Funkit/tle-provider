@@ -14,22 +14,26 @@ import (
 )
 
 type Server struct {
-	source               data.Source
-	router               chi.Router
-	Port                 int
-	CelestrakRefreshRate time.Duration
-	mu                   sync.RWMutex
-	done                 chan struct{}
+	source                 data.Source
+	router                 chi.Router
+	Port                   int
+	CelestrakRefreshRate   time.Duration
+	FileRefreshRateSeconds time.Duration
+	mu                     sync.RWMutex
+	done                   chan struct{}
+	demoMode               bool
 }
 
-func NewServer(port int, source data.Source, RefreshRateHours int) *Server {
+func NewServer(port int, source data.Source, celestrakRefreshRateHours, fileRefreshRateSeconds int, demoMode bool) *Server {
 	done := make(chan struct{})
 	return &Server{
-		source:               source,
-		router:               chi.NewRouter(),
-		Port:                 port,
-		CelestrakRefreshRate: time.Duration(RefreshRateHours) * time.Hour,
-		done:                 done,
+		source:                 source,
+		router:                 chi.NewRouter(),
+		Port:                   port,
+		CelestrakRefreshRate:   time.Duration(celestrakRefreshRateHours) * time.Hour,
+		FileRefreshRateSeconds: time.Duration(fileRefreshRateSeconds) * time.Second,
+		done:                   done,
+		demoMode:               demoMode,
 	}
 }
 
@@ -43,7 +47,13 @@ func (s *Server) SubRoutes(baseURL string, r chi.Router) {
 
 func (s *Server) Run() error {
 	log.Printf("Listening on port %v\n", s.Port)
-	if s.source.GetDataSource() == "celestrak" {
+	switch s.source.GetDataSource() {
+	case "celestrak":
+		s.source.Update(s.done, s.CelestrakRefreshRate)
+	case "file":
+		s.source.Update(s.done, s.FileRefreshRateSeconds)
+	}
+	if s.source.GetDataSource() == "celestrak" || s.source.GetDataSource() == "file" {
 		s.source.Update(s.done, s.CelestrakRefreshRate)
 	}
 	if err := http.ListenAndServe(fmt.Sprintf(":%v", s.Port), s.router); err != nil {
