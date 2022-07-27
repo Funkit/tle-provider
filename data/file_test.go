@@ -62,7 +62,6 @@ func TestFileSource_extractSatelliteData(t *testing.T) {
 				filePath:           tt.fields.filePath,
 				TwoLineElements:    tt.fields.TwoLineElements,
 				TwoLineElementsMap: tt.fields.TwoLineElementsMap,
-				LastCelestrakPull:  tt.fields.LastCelestrakPull,
 				UpdatePeriod:       tt.fields.UpdatePeriod,
 			}
 			got, err := fs.extractSatelliteData()

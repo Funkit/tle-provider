@@ -14,16 +14,14 @@ type FileSource struct {
 	filePath           string
 	TwoLineElements    []Satellite
 	TwoLineElementsMap map[string]Satellite
-	LastCelestrakPull  time.Time
 	UpdatePeriod       float64
 	mu                 sync.RWMutex
 }
 
 func NewFileSource(filePath string, refreshRateSeconds int) *FileSource {
 	return &FileSource{
-		filePath:          filePath,
-		LastCelestrakPull: time.Date(1970, 01, 01, 0, 0, 0, 1, time.UTC),
-		UpdatePeriod:      float64(refreshRateSeconds),
+		filePath:     filePath,
+		UpdatePeriod: float64(refreshRateSeconds),
 	}
 }
 
@@ -54,7 +52,14 @@ func (fs *FileSource) update() error {
 
 	fs.mu.Lock()
 	defer fs.mu.Unlock()
+
 	fs.TwoLineElements = tleList
+
+	fs.TwoLineElementsMap = make(map[string]Satellite)
+	for _, satellite := range tleList {
+		fs.TwoLineElementsMap[satellite.SatelliteName] = satellite
+	}
+
 	return nil
 }
 
