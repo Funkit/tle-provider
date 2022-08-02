@@ -1,4 +1,6 @@
-# tle-provider
+[![Go Report Card](https://goreportcard.com/badge/github.com/Funkit/tle-provider)](https://goreportcard.com/report/github.com/Funkit/tle-provider)
+
+# TLE Provider
 Pulls TLE data from multiple sources and exposes the result through a REST API.
 
 The OpenAPI specification is available [here.](./api/openapi-3.0.yml)
