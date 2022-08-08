@@ -86,7 +86,7 @@ func (cc *CelestrakClient) GetData() ([]Satellite, error) {
 	cc.mu.RLock()
 	defer cc.mu.RUnlock()
 	if len(cc.TwoLineElements) == 0 {
-		return nil, apierror.Wrap(fmt.Errorf("No satellite found"), apierror.ErrNotFound)
+		return nil, apierror.Wrap(fmt.Errorf("no satellite found"), apierror.ErrNotFound)
 	}
 	return cc.TwoLineElements, nil
 }
@@ -98,7 +98,7 @@ func (cc *CelestrakClient) GetSatellite(satelliteName string) chan SatelliteErr 
 		defer cc.mu.RUnlock()
 		if cc.TwoLineElementsMap[satelliteName].IsNull() {
 			output <- SatelliteErr{
-				Err: apierror.Wrap(fmt.Errorf("Satellite %v not found", satelliteName), apierror.ErrNotFound),
+				Err: apierror.Wrap(fmt.Errorf("satellite %v not found", satelliteName), apierror.ErrNotFound),
 				Sat: Satellite{},
 			}
 		} else {
@@ -263,7 +263,7 @@ func convertToTLE(data CelestrakData) (Satellite, error) {
 
 	return Satellite{
 		SatelliteName: data.ObjectName,
-		NORADID:       int(data.NORADCatID),
+		NORADID:       data.NORADCatID,
 		TLELine1:      tleLine1,
 		TLELine2:      tleLine2,
 	}, nil
@@ -273,7 +273,7 @@ func objectIDToCOSPARID(objectID string) (string, error) {
 	re := regexp.MustCompile(`[0-9]{2}(.+)-(.+)`)
 	matchResults := re.FindAllSubmatch([]byte(objectID), -1)
 	if (len(matchResults) != 1) || (len(matchResults[0]) != 3) {
-		return "", fmt.Errorf("Could not convert %s to COSPAR ID", objectID)
+		return "", fmt.Errorf("could not convert %s to COSPAR ID", objectID)
 	}
 
 	// Add trailing spaces

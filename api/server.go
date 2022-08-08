@@ -21,10 +21,9 @@ type Server struct {
 	FileRefreshRateSeconds time.Duration
 	mu                     sync.RWMutex
 	done                   chan struct{}
-	demoMode               bool
 }
 
-func NewServer(port int, source data.Source, celestrakRefreshRateHours, fileRefreshRateSeconds int, demoMode bool) *Server {
+func NewServer(port int, source data.Source, celestrakRefreshRateHours, fileRefreshRateSeconds int) *Server {
 	done := make(chan struct{})
 	return &Server{
 		source:                 source,
@@ -33,7 +32,6 @@ func NewServer(port int, source data.Source, celestrakRefreshRateHours, fileRefr
 		CelestrakRefreshRate:   time.Duration(celestrakRefreshRateHours) * time.Hour,
 		FileRefreshRateSeconds: time.Duration(fileRefreshRateSeconds) * time.Second,
 		done:                   done,
-		demoMode:               demoMode,
 	}
 }
 

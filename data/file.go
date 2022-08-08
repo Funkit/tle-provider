@@ -67,7 +67,7 @@ func (fs *FileSource) GetData() ([]Satellite, error) {
 	fs.mu.RLock()
 	defer fs.mu.RUnlock()
 	if len(fs.TwoLineElements) == 0 {
-		return nil, apierror.Wrap(fmt.Errorf("No satellite found"), apierror.ErrNotFound)
+		return nil, apierror.Wrap(fmt.Errorf("no satellite found"), apierror.ErrNotFound)
 	}
 	return fs.TwoLineElements, nil
 }
@@ -79,7 +79,7 @@ func (fs *FileSource) GetSatellite(satelliteName string) chan SatelliteErr {
 		defer fs.mu.RUnlock()
 		if fs.TwoLineElementsMap[satelliteName].IsNull() {
 			output <- SatelliteErr{
-				Err: apierror.Wrap(fmt.Errorf("Satellite %v not found", satelliteName), apierror.ErrNotFound),
+				Err: apierror.Wrap(fmt.Errorf("satellite %v not found", satelliteName), apierror.ErrNotFound),
 				Sat: Satellite{},
 			}
 		} else {

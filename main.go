@@ -48,7 +48,7 @@ func main() {
 			config.FileSourceConfiguration.RefreshRateSeconds)
 	}
 
-	server := api.NewServer(config.ServerPort, source, config.CelestrakConfiguration.RefreshRateHours, config.FileSourceConfiguration.RefreshRateSeconds, args.Demo)
+	server := api.NewServer(config.ServerPort, source, config.CelestrakConfiguration.RefreshRateHours, config.FileSourceConfiguration.RefreshRateSeconds)
 	server.AddMiddlewares(middleware.Logger, render.SetContentType(render.ContentTypeJSON), middleware.Recoverer)
 	server.InitializeRoutes()
 
