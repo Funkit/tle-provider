@@ -26,19 +26,12 @@ paths:
         Returns the latest TLE entries for all the satellites.
       operationId: getTLEList
       parameters:
-        - name: group
+        - name: constellation
           in: query
           required: false
           schema:
             type: string
-            enum: [geo, oneweb, starlink]
-        - name: limit
-          in: query
-          description: maximum number of results to return
-          required: false
-          schema:
-            type: integer
-            format: int32
+            enum: [oneweb, starlink]
       responses:
         200:
           description: get TLE list response

@@ -3,7 +3,15 @@ package data
 import (
 	"github.com/go-chi/render"
 	"net/http"
+	"regexp"
 	"time"
+)
+
+var (
+	constellations = map[string]*regexp.Regexp{
+		"oneweb":   regexp.MustCompile("ONEWEB-[0-9]+"),
+		"starlink": regexp.MustCompile("STARLINK-[0-9]+"),
+	}
 )
 
 //Info Receiving structure when parsing the configuration file
@@ -66,6 +74,7 @@ func GenerateRenderList(satList []Satellite) []render.Renderer {
 type Source interface {
 	Update(done <-chan struct{}, period time.Duration)
 	GetData() ([]Satellite, error)
+	GetConstellation(name string) ([]Satellite, error)
 	GetSatellite(satelliteName string) chan SatelliteErr
 	GetDataSource() string
 	GetConfig() (map[string]interface{}, error)

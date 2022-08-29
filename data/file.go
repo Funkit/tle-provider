@@ -14,6 +14,7 @@ type FileSource struct {
 	filePath           string
 	TwoLineElements    []Satellite
 	TwoLineElementsMap map[string]Satellite
+	Constellations     map[string][]Satellite
 	UpdatePeriod       float64
 	mu                 sync.RWMutex
 }
@@ -56,9 +57,17 @@ func (fs *FileSource) update() error {
 	fs.TwoLineElements = tleList
 
 	fs.TwoLineElementsMap = make(map[string]Satellite)
+	fs.Constellations = make(map[string][]Satellite)
 	for _, satellite := range tleList {
 		fs.TwoLineElementsMap[satellite.SatelliteName] = satellite
+		for constName, namePattern := range constellations {
+			if namePattern.MatchString(satellite.SatelliteName) {
+				fs.Constellations[constName] = append(fs.Constellations[constName], satellite)
+			}
+		}
 	}
+
+	fs.TwoLineElements = tleList
 
 	return nil
 }
@@ -70,6 +79,15 @@ func (fs *FileSource) GetData() ([]Satellite, error) {
 		return nil, apierror.Wrap(fmt.Errorf("no satellite found"), apierror.ErrNotFound)
 	}
 	return fs.TwoLineElements, nil
+}
+
+func (fs *FileSource) GetConstellation(name string) ([]Satellite, error) {
+	fs.mu.RLock()
+	defer fs.mu.RUnlock()
+	if len(fs.Constellations[name]) == 0 {
+		return nil, apierror.Wrap(fmt.Errorf("no satellite found"), apierror.ErrNotFound)
+	}
+	return fs.Constellations[name], nil
 }
 
 func (fs *FileSource) GetSatellite(satelliteName string) chan SatelliteErr {

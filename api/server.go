@@ -68,12 +68,28 @@ func (s *Server) InitializeRoutes() {
 
 func (s *Server) getTLEList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+
+		constellation, ok := r.URL.Query()["constellation"]
+		if ok && len(constellation) != 0 {
+			if len(constellation[0]) != 0 {
+				constellationSats, err := s.source.GetConstellation(constellation[0])
+				if err != nil {
+					apierror.Handle(w, r, err)
+					return
+				}
+				renderList := data.GenerateRenderList(constellationSats)
+				if err := render.RenderList(w, r, renderList); err != nil {
+					apierror.Handle(w, r, apierror.Wrap(err, apierror.ErrRender))
+				}
+				return
+			}
+		}
+
 		satelliteList, err := s.source.GetData()
 		if err != nil {
 			apierror.Handle(w, r, err)
 			return
 		}
-
 		renderList := data.GenerateRenderList(satelliteList)
 		if err := render.RenderList(w, r, renderList); err != nil {
 			apierror.Handle(w, r, apierror.Wrap(err, apierror.ErrRender))
