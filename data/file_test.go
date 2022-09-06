@@ -3,7 +3,6 @@ package data
 import (
 	"reflect"
 	"sort"
-	"sync"
 	"testing"
 	"time"
 )
@@ -15,7 +14,6 @@ func TestFileSource_extractSatelliteData(t *testing.T) {
 		TwoLineElementsMap map[string]Satellite
 		LastCelestrakPull  time.Time
 		UpdatePeriod       float64
-		mu                 sync.RWMutex
 	}
 	tests := []struct {
 		name    string
@@ -26,12 +24,11 @@ func TestFileSource_extractSatelliteData(t *testing.T) {
 		{
 			name: "basic case",
 			fields: fields{
-				filePath:           "../samples/tle.txt",
+				filePath:           "../samples/tle_filesource_testing.txt",
 				TwoLineElements:    []Satellite{},
 				TwoLineElementsMap: map[string]Satellite{},
 				LastCelestrakPull:  time.Time{},
 				UpdatePeriod:       0,
-				mu:                 sync.RWMutex{},
 			},
 			want: []Satellite{
 				{

@@ -22,7 +22,7 @@ func TestGetTLE(t *testing.T) {
 	done := make(chan struct{})
 
 	source := data.NewFileSource(
-		"../samples/tle.txt",
+		"../samples/tle_server_testing.txt",
 		30)
 
 	source.Update(done, 30*time.Second)
@@ -67,8 +67,6 @@ func TestGetTLE(t *testing.T) {
 			if response.Code != tt.wantRespCode {
 				t.Errorf("Expected response code %d. Got %d\n", tt.wantRespCode, response.Code)
 			} else {
-				t.Log(len(tt.wantBody))
-				t.Log(len(response.Body.String()))
 				if response.Body.String() != tt.wantBody {
 					t.Errorf("Expected response body %s. Got %s\n", tt.wantBody, response.Body.String())
 				}
@@ -81,7 +79,7 @@ func TestGetTLEList(t *testing.T) {
 	done := make(chan struct{})
 
 	source := data.NewFileSource(
-		"../samples/tle.txt",
+		"../samples/tle_server_testing.txt",
 		30)
 
 	source.Update(done, 30*time.Second)
@@ -162,8 +160,6 @@ func TestGetTLEList(t *testing.T) {
 			if response.Code != tt.wantRespCode {
 				t.Errorf("Expected response code %d. Got %d\n", tt.wantRespCode, response.Code)
 			} else {
-				t.Log(response.Body.String())
-				t.Log(len(tt.wantBody))
 				if response.Body.String() != tt.wantBody {
 					t.Errorf("Expected response body %s. Got %s\n", tt.wantBody, response.Body.String())
 				}
