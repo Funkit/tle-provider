@@ -165,7 +165,7 @@ func TestGetTLEList(t *testing.T) {
 				t.Log(response.Body.String())
 				t.Log(len(tt.wantBody))
 				if response.Body.String() != tt.wantBody {
-					//t.Errorf("Expected response body %s. Got %s\n", tt.wantBody, response.Body.String())
+					t.Errorf("Expected response body %s. Got %s\n", tt.wantBody, response.Body.String())
 				}
 			}
 		})
