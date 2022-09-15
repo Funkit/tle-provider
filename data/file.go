@@ -60,7 +60,7 @@ func (fs *FileSource) update() error {
 	fs.Constellations = make(map[string][]Satellite)
 	for _, satellite := range tleList {
 		fs.TwoLineElementsMap[satellite.SatelliteName] = satellite
-		for constName, namePattern := range constellations {
+		for constName, namePattern := range Constellations {
 			if namePattern.MatchString(satellite.SatelliteName) {
 				fs.Constellations[constName] = append(fs.Constellations[constName], satellite)
 			}

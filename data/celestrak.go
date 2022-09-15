@@ -159,7 +159,7 @@ func (cc *CelestrakClient) update() error {
 	for element := range output {
 		tleList = append(tleList, element)
 		cc.TwoLineElementsMap[element.SatelliteName] = element
-		for constName, namePattern := range constellations {
+		for constName, namePattern := range Constellations {
 			if namePattern.MatchString(element.SatelliteName) {
 				cc.Constellations[constName] = append(cc.Constellations[constName], element)
 			}
