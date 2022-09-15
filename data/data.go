@@ -8,7 +8,7 @@ import (
 )
 
 var (
-	constellations = map[string]*regexp.Regexp{
+	Constellations = map[string]*regexp.Regexp{
 		"oneweb":   regexp.MustCompile("ONEWEB-[0-9]+"),
 		"starlink": regexp.MustCompile("STARLINK-[0-9]+"),
 	}
