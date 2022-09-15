@@ -3,7 +3,7 @@ package api
 import (
 	"context"
 	"fmt"
-	"github.com/Funkit/tle-provider/apierror"
+	"github.com/Funkit/go-utils/apierror"
 	"github.com/Funkit/tle-provider/data"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"

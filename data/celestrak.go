@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Funkit/tle-provider/apierror"
+	"github.com/Funkit/go-utils/apierror"
 	"io/ioutil"
 	"log"
 	"net/http"

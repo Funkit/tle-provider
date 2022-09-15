@@ -2,8 +2,8 @@ package data
 
 import (
 	"fmt"
+	"github.com/Funkit/go-utils/apierror"
 	"github.com/Funkit/go-utils/utils"
-	"github.com/Funkit/tle-provider/apierror"
 	"log"
 	"strconv"
 	"sync"
