@@ -1,28 +1,28 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"github.com/Funkit/go-utils/utils"
 	"github.com/Funkit/tle-provider/api"
 	"github.com/Funkit/tle-provider/data"
-	"github.com/alexflint/go-arg"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"log"
 )
 
-var args struct {
-	ConfigFilePath string `arg:"required,-c" help:"path to the configuration file"`
-	Demo           bool   `default:"false"`
-}
-
 var Version = "development"
 
 func main() {
 
-	arg.MustParse(&args)
+	configPath := flag.String("c", "", "Configuration file path")
+	flag.Parse()
 
-	config, err := utils.GenericYAMLParsing[data.Info](args.ConfigFilePath)
+	if *configPath == "" {
+		log.Fatal("missing config file path. Type tle-provider -h to get usage")
+	}
+
+	config, err := utils.GenericYAMLParsing[data.Info](*configPath)
 	if err != nil {
 		panic(err)
 	}
