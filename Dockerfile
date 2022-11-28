@@ -13,6 +13,6 @@ RUN useradd -ms /bin/bash appuser
 WORKDIR /home/appuser
 COPY --from=build --chown=appuser:appuser /app/TLEProvider .
 USER appuser
-CMD ["sh", "-c", "./TLEProvider -c /home/appuser/configuration.yml"]
+CMD ["sh", "-c", "./TLEProvider serve --config /home/appuser/configuration.yml"]
 
 EXPOSE 5000
