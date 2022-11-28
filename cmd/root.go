@@ -1,6 +1,3 @@
-/*
-Copyright © 2022 NAME HERE <EMAIL ADDRESS>
-*/
 package cmd
 
 import (
@@ -23,7 +20,6 @@ from various sources, and expose it through a single REST API.
 The following sources are currently supported:
 - Celestrak
 - File source (following the Celestrak file formatting)`,
-		// Run: func(cmd *cobra.Command, args []string) { },
 	}
 )
 
