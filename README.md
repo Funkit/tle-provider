@@ -12,7 +12,7 @@ The following data sources are available :
 
 ## Usage
 
-> tle-provider -c \<configuration file>
+> tle-provider serve --config \<configuration file>
 
 sample configuration file:
 
