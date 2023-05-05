@@ -2,13 +2,14 @@ package api
 
 import (
 	"fmt"
-	"github.com/Funkit/tle-provider/data"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/render"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	"github.com/Funkit/tle-provider/data"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/render"
 )
 
 func executeRequest(req *http.Request, s *Server) *httptest.ResponseRecorder {
@@ -19,14 +20,8 @@ func executeRequest(req *http.Request, s *Server) *httptest.ResponseRecorder {
 }
 
 func TestGetTLE(t *testing.T) {
-	done := make(chan struct{})
-
 	source := data.NewFileSource(
-		"../samples/tle_server_testing.txt",
-		30)
-
-	source.Update(done, 30*time.Second)
-	defer func() { done <- struct{}{} }()
+		"../samples/tle_server_testing.txt")
 
 	type fields struct {
 		satelliteName string
@@ -57,7 +52,7 @@ func TestGetTLE(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := NewServer(80, source, 1, 30)
+			s := NewServer(80, source, time.Duration(30)*time.Second)
 			s.AddMiddlewares(middleware.Logger, render.SetContentType(render.ContentTypeJSON), middleware.Recoverer)
 			s.InitializeRoutes()
 
@@ -76,14 +71,8 @@ func TestGetTLE(t *testing.T) {
 }
 
 func TestGetTLEList(t *testing.T) {
-	done := make(chan struct{})
-
 	source := data.NewFileSource(
-		"../samples/tle_server_testing.txt",
-		30)
-
-	source.Update(done, 30*time.Second)
-	defer func() { done <- struct{}{} }()
+		"../samples/tle_server_testing.txt")
 
 	type fields struct {
 		constellation string
@@ -144,7 +133,7 @@ func TestGetTLEList(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := NewServer(80, source, 1, 30)
+			s := NewServer(80, source, time.Duration(30)*time.Second)
 			s.AddMiddlewares(middleware.Logger, render.SetContentType(render.ContentTypeJSON), middleware.Recoverer)
 			s.InitializeRoutes()
 

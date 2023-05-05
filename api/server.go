@@ -1,37 +1,50 @@
 package api
 
 import (
-	"context"
 	"fmt"
+	"log"
+	"net/http"
+	"regexp"
+	"sync"
+	"time"
+
 	"github.com/Funkit/go-utils/apierror"
 	"github.com/Funkit/tle-provider/data"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"log"
-	"net/http"
-	"sync"
-	"time"
+)
+
+var (
+	Constellations = map[string]*regexp.Regexp{
+		"oneweb":   regexp.MustCompile("ONEWEB-[0-9]+"),
+		"starlink": regexp.MustCompile("STARLINK-[0-9]+"),
+	}
 )
 
 type Server struct {
 	source                 data.Source
 	router                 chi.Router
 	Port                   int
+	DataRefreshRate        time.Duration
 	CelestrakRefreshRate   time.Duration
 	FileRefreshRateSeconds time.Duration
 	mu                     sync.RWMutex
+	satellitesTLEs         []data.Satellite
+	satellitesTLEsMap      map[string]data.Satellite
+	constellationsTLEs     map[string][]data.Satellite
+	lastPull               time.Time
 	done                   chan struct{}
 }
 
-func NewServer(port int, source data.Source, celestrakRefreshRateHours, fileRefreshRateSeconds int) *Server {
+func NewServer(port int, source data.Source, refreshRate time.Duration) *Server {
 	done := make(chan struct{})
 	return &Server{
-		source:                 source,
-		router:                 chi.NewRouter(),
-		Port:                   port,
-		CelestrakRefreshRate:   time.Duration(celestrakRefreshRateHours) * time.Hour,
-		FileRefreshRateSeconds: time.Duration(fileRefreshRateSeconds) * time.Second,
-		done:                   done,
+		source:          source,
+		router:          chi.NewRouter(),
+		Port:            port,
+		DataRefreshRate: refreshRate,
+		done:            done,
+		lastPull:        time.Date(1970, 01, 01, 0, 0, 0, 1, time.UTC),
 	}
 }
 
@@ -43,17 +56,46 @@ func (s *Server) SubRoutes(baseURL string, r chi.Router) {
 	s.router.Mount(baseURL, r)
 }
 
+func (s *Server) update() {
+	for {
+		select {
+		case <-s.done:
+			break
+		case <-time.After(s.DataRefreshRate):
+			sats, err := s.source.GetData()
+			if err != nil {
+				log.Println(err.Error())
+			} else {
+				s.mu.Lock()
+				defer s.mu.Unlock()
+
+				s.satellitesTLEs = sats
+				s.satellitesTLEsMap = make(map[string]data.Satellite)
+				s.constellationsTLEs = make(map[string][]data.Satellite)
+
+				for _, element := range sats {
+					s.satellitesTLEsMap[element.SatelliteName] = element
+
+					for constName, namePattern := range Constellations {
+						if namePattern.MatchString(element.SatelliteName) {
+							s.constellationsTLEs[constName] = append(s.constellationsTLEs[constName], element)
+						}
+					}
+				}
+
+				s.lastPull = time.Now()
+				log.Printf("data successfully pulled from %s at %s\n", s.source.GetDataSource(), time.Now().Format("2006-01-02T15:04:05Z"))
+			}
+		}
+	}
+}
+
 func (s *Server) Run() error {
+
+	go s.update()
+
 	log.Printf("Listening on port %v\n", s.Port)
-	switch s.source.GetDataSource() {
-	case "celestrak":
-		s.source.Update(s.done, s.CelestrakRefreshRate)
-	case "file":
-		s.source.Update(s.done, s.FileRefreshRateSeconds)
-	}
-	if s.source.GetDataSource() == "celestrak" || s.source.GetDataSource() == "file" {
-		s.source.Update(s.done, s.CelestrakRefreshRate)
-	}
+
 	if err := http.ListenAndServe(fmt.Sprintf(":%v", s.Port), s.router); err != nil {
 		s.done <- struct{}{}
 		panic(err)
@@ -72,12 +114,15 @@ func (s *Server) getTLEList() http.HandlerFunc {
 		constellation, ok := r.URL.Query()["constellation"]
 		if ok && len(constellation) != 0 {
 			if len(constellation[0]) != 0 {
-				constellationSats, err := s.source.GetConstellation(constellation[0])
-				if err != nil {
-					apierror.Handle(w, r, err)
+
+				s.mu.RLock()
+				defer s.mu.RUnlock()
+				if len(s.constellationsTLEs[constellation[0]]) == 0 {
+					apierror.Handle(w, r, apierror.Wrap(fmt.Errorf("no satellites found"), apierror.ErrNotFound))
 					return
 				}
-				renderList := data.GenerateRenderList(constellationSats)
+
+				renderList := data.GenerateRenderList(s.constellationsTLEs[constellation[0]])
 				if err := render.RenderList(w, r, renderList); err != nil {
 					apierror.Handle(w, r, apierror.Wrap(err, apierror.ErrRender))
 				}
@@ -85,12 +130,14 @@ func (s *Server) getTLEList() http.HandlerFunc {
 			}
 		}
 
-		satelliteList, err := s.source.GetData()
-		if err != nil {
-			apierror.Handle(w, r, err)
+		s.mu.RLock()
+		defer s.mu.RUnlock()
+		if len(s.satellitesTLEs) == 0 {
+			apierror.Handle(w, r, apierror.Wrap(fmt.Errorf("no satellite found"), apierror.ErrNotFound))
 			return
 		}
-		renderList := data.GenerateRenderList(satelliteList)
+
+		renderList := data.GenerateRenderList(s.satellitesTLEs)
 		if err := render.RenderList(w, r, renderList); err != nil {
 			apierror.Handle(w, r, apierror.Wrap(err, apierror.ErrRender))
 		}
@@ -101,26 +148,16 @@ func (s *Server) getTLE() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		satelliteParam := chi.URLParam(r, "satellite")
 
-		output := s.source.GetSatellite(satelliteParam)
+		s.mu.RLock()
+		defer s.mu.RUnlock()
 
-		select {
-		case <-r.Context().Done():
-			switch r.Context().Err() {
-			case context.DeadlineExceeded:
-				apierror.Handle(w, r, apierror.Wrap(fmt.Errorf("timeout writing and checking multiple points"), apierror.ErrTimeout))
-				break
-			default:
-				apierror.Handle(w, r, apierror.Wrap(fmt.Errorf("query canceled"), apierror.ErrCancelled))
-				break
-			}
-		case satelliteErr := <-output:
-			if satelliteErr.Err != nil {
-				apierror.Handle(w, r, satelliteErr.Err)
-			} else {
-				if err := render.Render(w, r, satelliteErr.Sat); err != nil {
-					apierror.Handle(w, r, apierror.Wrap(err, apierror.ErrRender))
-				}
-			}
+		if s.satellitesTLEsMap[satelliteParam].IsNull() {
+			apierror.Handle(w, r, apierror.Wrap(fmt.Errorf("satellite %v not found", satelliteParam), apierror.ErrNotFound))
+			return
+		}
+
+		if err := render.Render(w, r, s.satellitesTLEsMap[satelliteParam]); err != nil {
+			apierror.Handle(w, r, apierror.Wrap(err, apierror.ErrRender))
 		}
 	}
 }

@@ -2,13 +2,15 @@ package cmd
 
 import (
 	"fmt"
+	"log"
+	"time"
+
 	"github.com/Funkit/go-utils/utils"
 	"github.com/Funkit/tle-provider/api"
 	"github.com/Funkit/tle-provider/data"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/spf13/cobra"
-	"log"
 )
 
 var serveCmd = &cobra.Command{
@@ -33,19 +35,21 @@ The following sources are currently supported:
 
 		var source data.Source
 
+		var refreshRate time.Duration
+
 		switch config.DataSource {
 		case "celestrak":
 			source = data.NewCelestrakClient(
 				config.CelestrakConfiguration.AllSatellitesURL,
-				config.CelestrakConfiguration.GeoSatellitesURL,
-				config.CelestrakConfiguration.RefreshRateHours)
+				config.CelestrakConfiguration.GeoSatellitesURL)
+			refreshRate = time.Duration(config.CelestrakConfiguration.RefreshRateHours) * time.Hour
 		case "file":
 			source = data.NewFileSource(
-				config.FileSourceConfiguration.SourceFilePath,
-				config.FileSourceConfiguration.RefreshRateSeconds)
+				config.FileSourceConfiguration.SourceFilePath)
+			refreshRate = time.Duration(config.FileSourceConfiguration.RefreshRateSeconds) * time.Second
 		}
 
-		server := api.NewServer(config.ServerPort, source, config.CelestrakConfiguration.RefreshRateHours, config.FileSourceConfiguration.RefreshRateSeconds)
+		server := api.NewServer(config.ServerPort, source, refreshRate)
 		server.AddMiddlewares(middleware.Logger, render.SetContentType(render.ContentTypeJSON), middleware.Recoverer)
 		server.InitializeRoutes()
 

@@ -2,112 +2,27 @@ package data
 
 import (
 	"fmt"
-	"github.com/Funkit/go-utils/apierror"
-	"github.com/Funkit/go-utils/utils"
-	"log"
 	"strconv"
-	"sync"
-	"time"
+
+	"github.com/Funkit/go-utils/utils"
 )
 
 type FileSource struct {
-	filePath           string
-	TwoLineElements    []Satellite
-	TwoLineElementsMap map[string]Satellite
-	Constellations     map[string][]Satellite
-	UpdatePeriod       float64
-	mu                 sync.RWMutex
+	filePath string
 }
 
-func NewFileSource(filePath string, refreshRateSeconds int) *FileSource {
+func NewFileSource(filePath string) *FileSource {
 	return &FileSource{
-		filePath:     filePath,
-		UpdatePeriod: float64(refreshRateSeconds),
+		filePath: filePath,
 	}
-}
-
-func (fs *FileSource) Update(done <-chan struct{}, period time.Duration) {
-	if err := fs.update(); err != nil {
-		log.Println(err.Error())
-	}
-	go func() {
-		for {
-			select {
-			case <-done:
-				break
-			case <-time.After(period):
-				if err := fs.update(); err != nil {
-					log.Println(err.Error())
-				}
-			}
-		}
-	}()
-}
-
-func (fs *FileSource) update() error {
-
-	tleList, err := fs.extractSatelliteData()
-	if err != nil {
-		return err
-	}
-
-	fs.mu.Lock()
-	defer fs.mu.Unlock()
-
-	fs.TwoLineElements = tleList
-
-	fs.TwoLineElementsMap = make(map[string]Satellite)
-	fs.Constellations = make(map[string][]Satellite)
-	for _, satellite := range tleList {
-		fs.TwoLineElementsMap[satellite.SatelliteName] = satellite
-		for constName, namePattern := range Constellations {
-			if namePattern.MatchString(satellite.SatelliteName) {
-				fs.Constellations[constName] = append(fs.Constellations[constName], satellite)
-			}
-		}
-	}
-
-	fs.TwoLineElements = tleList
-
-	return nil
 }
 
 func (fs *FileSource) GetData() ([]Satellite, error) {
-	fs.mu.RLock()
-	defer fs.mu.RUnlock()
-	if len(fs.TwoLineElements) == 0 {
-		return nil, apierror.Wrap(fmt.Errorf("no satellite found"), apierror.ErrNotFound)
+	tleList, err := fs.extractSatelliteData()
+	if err != nil {
+		return nil, err
 	}
-	return fs.TwoLineElements, nil
-}
-
-func (fs *FileSource) GetConstellation(name string) ([]Satellite, error) {
-	fs.mu.RLock()
-	defer fs.mu.RUnlock()
-	if len(fs.Constellations[name]) == 0 {
-		return nil, apierror.Wrap(fmt.Errorf("no satellite found"), apierror.ErrNotFound)
-	}
-	return fs.Constellations[name], nil
-}
-
-func (fs *FileSource) GetSatellite(satelliteName string) chan SatelliteErr {
-	output := make(chan SatelliteErr)
-	go func() {
-		fs.mu.RLock()
-		defer fs.mu.RUnlock()
-		if fs.TwoLineElementsMap[satelliteName].IsNull() {
-			output <- SatelliteErr{
-				Err: apierror.Wrap(fmt.Errorf("satellite %v not found", satelliteName), apierror.ErrNotFound),
-				Sat: Satellite{},
-			}
-		} else {
-			output <- SatelliteErr{
-				Err: nil,
-				Sat: fs.TwoLineElementsMap[satelliteName],
-			}
-		}
-	}()
-	return output
+	return tleList, nil
 }
 
 func (fs *FileSource) GetDataSource() string {

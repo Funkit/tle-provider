@@ -56,10 +56,7 @@ func TestFileSource_extractSatelliteData(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			fs := &FileSource{
-				filePath:           tt.fields.filePath,
-				TwoLineElements:    tt.fields.TwoLineElements,
-				TwoLineElementsMap: tt.fields.TwoLineElementsMap,
-				UpdatePeriod:       tt.fields.UpdatePeriod,
+				filePath: tt.fields.filePath,
 			}
 			got, err := fs.extractSatelliteData()
 			if (err != nil) != tt.wantErr {

@@ -1,20 +1,12 @@
 package data
 
 import (
-	"github.com/go-chi/render"
 	"net/http"
-	"regexp"
-	"time"
+
+	"github.com/go-chi/render"
 )
 
-var (
-	Constellations = map[string]*regexp.Regexp{
-		"oneweb":   regexp.MustCompile("ONEWEB-[0-9]+"),
-		"starlink": regexp.MustCompile("STARLINK-[0-9]+"),
-	}
-)
-
-//Info Receiving structure when parsing the configuration file
+// Info Receiving structure when parsing the configuration file
 type Info struct {
 	ServerPort              int                     `yaml:"server_port"`
 	DataSource              string                  `yaml:"data_source"`
@@ -72,10 +64,7 @@ func GenerateRenderList(satList []Satellite) []render.Renderer {
 
 // Source interface for either Celestrak or Skyminer data
 type Source interface {
-	Update(done <-chan struct{}, period time.Duration)
 	GetData() ([]Satellite, error)
-	GetConstellation(name string) ([]Satellite, error)
-	GetSatellite(satelliteName string) chan SatelliteErr
 	GetDataSource() string
 	GetConfig() (map[string]interface{}, error)
 }

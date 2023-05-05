@@ -4,14 +4,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/Funkit/go-utils/apierror"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/Funkit/go-utils/apierror"
 
 	"github.com/Funkit/go-utils/utils"
 )
@@ -39,102 +39,26 @@ type CelestrakData struct {
 
 // CelestrakClient implementation of the Source interface for Celestrak
 type CelestrakClient struct {
-	httpClient         *http.Client
-	AllSatellitesURL   string
-	GeoSatellitesURL   string
-	OrbitalData        []CelestrakData
-	TwoLineElements    []Satellite
-	TwoLineElementsMap map[string]Satellite
-	Constellations     map[string][]Satellite
-	LastCelestrakPull  time.Time
-	UpdatePeriod       float64
-	mu                 sync.RWMutex
+	httpClient       *http.Client
+	AllSatellitesURL string
+	GeoSatellitesURL string
 }
 
 // NewCelestrakClient Generates a new CelestrakClient from the information in the configuration file
-func NewCelestrakClient(allSatellitesURL, geoSatellitesURL string, refreshRateHours int) *CelestrakClient {
+func NewCelestrakClient(allSatellitesURL, geoSatellitesURL string) *CelestrakClient {
 
 	return &CelestrakClient{
-		httpClient:        &http.Client{},
-		AllSatellitesURL:  allSatellitesURL,
-		GeoSatellitesURL:  geoSatellitesURL,
-		OrbitalData:       []CelestrakData{},
-		LastCelestrakPull: time.Date(1970, 01, 01, 0, 0, 0, 1, time.UTC),
-		UpdatePeriod:      float64(refreshRateHours),
+		httpClient:       &http.Client{},
+		AllSatellitesURL: allSatellitesURL,
+		GeoSatellitesURL: geoSatellitesURL,
 	}
-}
-
-func (cc *CelestrakClient) Update(done <-chan struct{}, period time.Duration) {
-	if err := cc.update(); err != nil {
-		log.Println(err.Error())
-	}
-	go func() {
-		for {
-			select {
-			case <-done:
-				break
-			case <-time.After(period):
-				if err := cc.update(); err != nil {
-					log.Println(err.Error())
-				}
-			}
-		}
-	}()
 }
 
 // GetData Implementation of the Source interface for Celestrak
 func (cc *CelestrakClient) GetData() ([]Satellite, error) {
-	cc.mu.RLock()
-	defer cc.mu.RUnlock()
-	if len(cc.TwoLineElements) == 0 {
-		return nil, apierror.Wrap(fmt.Errorf("no satellite found"), apierror.ErrNotFound)
-	}
-	return cc.TwoLineElements, nil
-}
-
-func (cc *CelestrakClient) GetConstellation(name string) ([]Satellite, error) {
-	cc.mu.RLock()
-	defer cc.mu.RUnlock()
-	if len(cc.Constellations[name]) == 0 {
-		return nil, apierror.Wrap(fmt.Errorf("no satellite found"), apierror.ErrNotFound)
-	}
-	return cc.Constellations[name], nil
-}
-
-func (cc *CelestrakClient) GetSatellite(satelliteName string) chan SatelliteErr {
-	output := make(chan SatelliteErr)
-	go func() {
-		cc.mu.RLock()
-		defer cc.mu.RUnlock()
-		if cc.TwoLineElementsMap[satelliteName].IsNull() {
-			output <- SatelliteErr{
-				Err: apierror.Wrap(fmt.Errorf("satellite %v not found", satelliteName), apierror.ErrNotFound),
-				Sat: Satellite{},
-			}
-		} else {
-			output <- SatelliteErr{
-				Err: nil,
-				Sat: cc.TwoLineElementsMap[satelliteName],
-			}
-		}
-	}()
-	return output
-}
-
-//GetDataSource return server data source
-func (cc *CelestrakClient) GetDataSource() string {
-	return "celestrak"
-}
-
-//GetConfig return server configuration
-func (cc *CelestrakClient) GetConfig() (map[string]interface{}, error) {
-	return nil, nil
-}
-
-func (cc *CelestrakClient) update() error {
 	satData, err := cc.getCelestrakData()
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var wg sync.WaitGroup
@@ -151,25 +75,22 @@ func (cc *CelestrakClient) update() error {
 
 	wg.Wait()
 	close(output)
-	cc.mu.Lock()
-	defer cc.mu.Unlock()
 	var tleList []Satellite
-	cc.TwoLineElementsMap = make(map[string]Satellite)
-	cc.Constellations = make(map[string][]Satellite)
 	for element := range output {
 		tleList = append(tleList, element)
-		cc.TwoLineElementsMap[element.SatelliteName] = element
-		for constName, namePattern := range Constellations {
-			if namePattern.MatchString(element.SatelliteName) {
-				cc.Constellations[constName] = append(cc.Constellations[constName], element)
-			}
-		}
 	}
-	cc.TwoLineElements = tleList
-	cc.LastCelestrakPull = time.Now()
-	log.Printf("data successfully pulled from celestrak at %s\n", time.Now().Format("2006-01-02T15:04:05Z"))
 
-	return nil
+	return tleList, nil
+}
+
+// GetDataSource return server data source
+func (cc *CelestrakClient) GetDataSource() string {
+	return "celestrak"
+}
+
+// GetConfig return server configuration
+func (cc *CelestrakClient) GetConfig() (map[string]interface{}, error) {
+	return nil, nil
 }
 
 // getCelestrakData Get data from celestrak
