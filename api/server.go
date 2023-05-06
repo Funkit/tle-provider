@@ -60,37 +60,48 @@ func (s *Server) update() {
 	for {
 		select {
 		case <-s.done:
+			log.Println("END")
 			break
 		case <-time.After(s.DataRefreshRate):
 			sats, err := s.source.GetData()
 			if err != nil {
 				log.Println(err.Error())
 			} else {
-				s.mu.Lock()
-				defer s.mu.Unlock()
-
-				s.satellitesTLEs = sats
-				s.satellitesTLEsMap = make(map[string]data.Satellite)
-				s.constellationsTLEs = make(map[string][]data.Satellite)
-
-				for _, element := range sats {
-					s.satellitesTLEsMap[element.SatelliteName] = element
-
-					for constName, namePattern := range Constellations {
-						if namePattern.MatchString(element.SatelliteName) {
-							s.constellationsTLEs[constName] = append(s.constellationsTLEs[constName], element)
-						}
-					}
-				}
-
-				s.lastPull = time.Now()
-				log.Printf("data successfully pulled from %s at %s\n", s.source.GetDataSource(), time.Now().Format("2006-01-02T15:04:05Z"))
+				s.UpdateAllValues(sats)
 			}
 		}
 	}
 }
 
+func (s *Server) UpdateAllValues(sats []data.Satellite) {
+	s.mu.Lock()
+	s.satellitesTLEs = sats
+	s.satellitesTLEsMap = make(map[string]data.Satellite)
+	s.constellationsTLEs = make(map[string][]data.Satellite)
+
+	for _, element := range sats {
+		s.satellitesTLEsMap[element.SatelliteName] = element
+
+		for constName, namePattern := range Constellations {
+			if namePattern.MatchString(element.SatelliteName) {
+				s.constellationsTLEs[constName] = append(s.constellationsTLEs[constName], element)
+			}
+		}
+	}
+
+	s.lastPull = time.Now()
+	log.Printf("data successfully pulled from %s at %s\n", s.source.GetDataSource(), time.Now().Format("2006-01-02T15:04:05Z"))
+	s.mu.Unlock()
+}
+
 func (s *Server) Run() error {
+
+	sats, err := s.source.GetData()
+	if err != nil {
+		return err
+	} else {
+		s.UpdateAllValues(sats)
+	}
 
 	go s.update()
 
@@ -100,6 +111,8 @@ func (s *Server) Run() error {
 		s.done <- struct{}{}
 		panic(err)
 	}
+
+	s.done <- struct{}{}
 	return nil
 }
 

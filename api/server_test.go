@@ -56,6 +56,13 @@ func TestGetTLE(t *testing.T) {
 			s.AddMiddlewares(middleware.Logger, render.SetContentType(render.ContentTypeJSON), middleware.Recoverer)
 			s.InitializeRoutes()
 
+			sats, err := s.source.GetData()
+			if err != nil {
+				t.Errorf("data from source %s not working", s.source.GetDataSource())
+			}
+
+			s.UpdateAllValues(sats)
+
 			req, _ := http.NewRequest("GET", fmt.Sprintf("/tle/%v", tt.fields.satelliteName), nil)
 
 			response := executeRequest(req, s)
@@ -136,6 +143,13 @@ func TestGetTLEList(t *testing.T) {
 			s := NewServer(80, source, time.Duration(30)*time.Second)
 			s.AddMiddlewares(middleware.Logger, render.SetContentType(render.ContentTypeJSON), middleware.Recoverer)
 			s.InitializeRoutes()
+
+			sats, err := s.source.GetData()
+			if err != nil {
+				t.Errorf("data from source %s not working", s.source.GetDataSource())
+			}
+
+			s.UpdateAllValues(sats)
 
 			path := "/tle"
 
