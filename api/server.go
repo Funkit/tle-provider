@@ -103,7 +103,9 @@ func (s *Server) Run() error {
 		s.UpdateAllValues(sats)
 	}
 
-	go s.update()
+	if s.DataRefreshRate >= time.Second {
+		go s.update()
+	}
 
 	log.Printf("Listening on port %v\n", s.Port)
 
