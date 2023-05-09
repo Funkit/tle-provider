@@ -37,3 +37,5 @@ file_source_configuration:
 - `file_source_configuration`:
   - `source_file_path`: path to the TLE source file.
   - `refresh_rate_seconds`: revisit rate of the source file.
+
+**Note**: when performing `Run()`, the server starts a separate thread for pulling data from the source only if the refresh rate is set at more than 1 second.
